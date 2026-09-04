@@ -179,8 +179,15 @@ Then two follow-ups that decide how much design work happens before code:
   anything where colour carries meaning rather than decoration — the corpus has an app whose alert
   palette is a safety mechanism, with an explicit rule that *form must reinforce colour* so the
   information survives colourblindness and a glance.
-- **Do you want screens mocked as artboards before implementation?** If yes, the mockup becomes the
-  design of record and the spec text is the summary — state which one wins when they disagree.
+- **Do you want screens mocked up before implementation?** Usually yes for anything past two
+  screens. This answer opens **Phase 1b** (`design-phase.md`): three to five genuinely different
+  directions as artboards, feedback, converge, then a named design of record — and state which
+  artifact wins when the mockup and the spec disagree. At novice levels this is the phase where the
+  user contributes most usefully, since people who cannot review an architecture can review a
+  picture.
+- **Will it be used somewhere you can't control the lighting** — outdoors, in bright sun, in the
+  dark? That forces more than one palette, and the theme has to be structured as swappable from the
+  first commit (`design-phase.md` §4).
 
 ### 6 · Does it use AI, or any cloud service?
 

@@ -27,6 +27,7 @@ wins.** Install this one *alongside* them, not instead of them.
 | `SKILL.md` | Entry point: the phase table, the version pins, the reference index, the house rules |
 | `references/user-calibration.md` | Establishing the user's experience level, then tuning vocabulary, explanation depth and how much to decide for them; plain-language glossary for every term the skill uses |
 | `references/intake-interview.md` | Ten broad-to-narrow questions asked before any code, plus dynamically generated follow-ups |
+| `references/design-phase.md` | Design tokens, mockup generation and the converge-on-one loop, seed-colour theme generation, contrast as a unit test, and the three-seat council design review |
 | `references/lifecycle.md` | The eight phases, each with an artifact and an exit gate |
 | `references/platform-currency.md` | Dated version pins, the AGP 9 break, API 36 behaviours that break working apps, Play deadlines, developer verification |
 | `references/ecosystem.md` | Android CLI, the per-phase Google-skill routing table, Journeys, MCP device control, prior art |
@@ -41,9 +42,9 @@ wins.** Install this one *alongside* them, not instead of them.
 ## The process it runs
 
 ```
-0 Interview  →  1 Spec  →  2 Plan  →  3 Implement  →  4 Test scenarios
-                                            ↑              ↓
-                                            └── 5 Audit & fix ──→  6 Beta  →  7 Handoff
+0 Interview  →  1 Spec  →  1b Design  →  2 Plan  →  3 Implement  →  4 Test scenarios
+                                                          ↑              ↓
+                                                          └── 5 Audit & fix ──→  6 Beta  →  7 Handoff
 ```
 
 Phase 2's gate is the important one: **the plan is approved before any implementation code is

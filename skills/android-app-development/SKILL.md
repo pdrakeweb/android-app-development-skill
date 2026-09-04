@@ -36,7 +36,8 @@ The phases, each with an artifact and an exit gate:
 | Phase | Artifact | Gate |
 |---|---|---|
 | 0 · Interview | audience level (Q0) + answered question set | answers played back and confirmed |
-| 1 · Spec | `docs/APP_SPEC.md` (+ design tokens, ADRs, `CLAUDE.md`) | user has read and confirmed it |
+| 1 · Spec | `docs/APP_SPEC.md` (+ ADRs, `CLAUDE.md`) | user has read and confirmed it |
+| 1b · Design | `docs/DESIGN_TOKENS.md`, mockups, a named design of record | user has seen and confirmed the design |
 | 2 · Plan | `docs/IMPLEMENTATION_PLAN.md` | **user approves before any code** |
 | 3 · Implement | working code + updated docs | builds, installs, launches, driven by hand |
 | 4 · Test scenarios | `*.journey.xml` and/or `tests/NN-*.md` | suite runs end to end, every result PASS/FAIL/BLOCKED |
@@ -44,7 +45,7 @@ The phases, each with an artifact and an exit gate:
 | 6 · Beta release | signed release build, published | installed and exercised on real hardware |
 | 7 · Handoff | `CLAUDE.md`, `EMULATOR.md`, `DEBUGGING.md`, revisions log | a cold session can build and test it |
 
-Phases 3–5 loop. Phases 0–2 happen once; re-opening one later is a deliberate act that gets written down, not a drift.
+Phases 3–5 loop. Phases 0–2 (including 1b) happen once; re-opening one later is a deliberate act that gets written down, not a drift.
 
 ## Before you scaffold: the version pins
 
@@ -79,6 +80,7 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 |---|---|
 | **Any conversation with a human at all** — how much to explain, which words to use, how much to decide for them | `references/user-calibration.md` |
 | Someone asked for a new app, or a rough idea needs turning into a spec | `references/intake-interview.md` |
+| Mocking up screens, choosing a palette, generating a theme, or reviewing how the built app looks | `references/design-phase.md` |
 | Running the end-to-end process; what artifact each phase produces and what "done" means | `references/lifecycle.md` |
 | Pinning versions, checking a Play deadline, or diagnosing an AGP 9 / API 36 breakage | `references/platform-currency.md` |
 | Choosing a Google skill to defer to, using Android CLI, or picking a test/device-control tool | `references/ecosystem.md` |

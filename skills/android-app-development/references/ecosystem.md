@@ -87,6 +87,8 @@ same context budget as this one.
 | 2–3 · Architecture defaults | `navigation/navigation-3` | Navigation choice at scaffold time |
 | 3 · Any UI at all, targeting API 36 | `system/edge-to-edge` | Now mandatory (`platform-currency.md` §4) |
 | 3 · Compose work that is *not* routine | `jetpack-compose` | Deliberately excludes basics |
+| **1b · Generating or changing the theme** | `jetpack-compose/theming/styles` | Current theming APIs — install for the design phase (`design-phase.md` §4) |
+| **1b/3 · Any multi-form-factor layout** | `jetpack-compose/adaptive` | `WindowSizeClass` and adaptive layout. Most P0s in the corpus's design review were adaptive-layout failures |
 | 4 · Test setup | `testing/testing-setup` | Wiring the suite (`testing-and-bugs.md`) |
 | 5 · Release-quality audit | `performance/r8-analyzer` | R8/keep-rule analysis — **no equivalent here** |
 | 5 · Performance findings | `profilers/android-profiler` | Profiling — **no equivalent here** |

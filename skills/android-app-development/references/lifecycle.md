@@ -6,13 +6,13 @@ order are where things went sideways — most often, code written before a spec 
 scenarios written after the bugs had already been found by hand.
 
 ```
-0 Interview  →  1 Spec  →  2 Plan  →  3 Implement  →  4 Test scenarios
-                                            ↑              ↓
-                                            └── 5 Audit & fix ──→  6 Beta  →  7 Handoff
+0 Interview  →  1 Spec  →  1b Design  →  2 Plan  →  3 Implement  →  4 Test scenarios
+                                                          ↑              ↓
+                                                          └── 5 Audit & fix ──→  6 Beta  →  7 Handoff
 ```
 
-Phases 3–5 loop. Phases 0–2 happen once, and re-opening them later is a deliberate act that
-gets written down, not a drift.
+Phases 3–5 loop. Phases 0–2 (including 1b) happen once, and re-opening them later is a deliberate
+act that gets written down, not a drift.
 
 ---
 
@@ -59,11 +59,6 @@ worked, in this order:
 
 Companion artifacts, created here when the interview called for them:
 
-- **`docs/DESIGN_TOKENS.md`** — colours, type scale, metrics, and any semantic palette (alert
-  ladders, state colours). Include a *"rules that are not decoration"* section: if colour carries
-  meaning, state how form reinforces it so the meaning survives a glance and colourblindness.
-- **Mockups / artboards**, if chosen. State explicitly which is the design of record when the
-  mockup and the spec text disagree.
 - **`docs/adr/ADR-NNNN-*.md`** for any decision that's expensive to reverse — module boundaries,
   an on-device-vs-cloud split, a wire format, a safety rule. An ADR is cheaper than re-deriving the
   reasoning in six weeks.
@@ -76,7 +71,43 @@ Companion artifacts, created here when the interview called for them:
   constraints, the module map with allowed dependency edges, the house rules, and where to ask
   rather than guess. Keeping it current is part of every later phase.
 
+`docs/DESIGN_TOKENS.md` and any mockups are **Phase 1b's** artifacts, not this phase's — the spec
+says what the app is, design decides what it looks like.
+
 **Exit gate:** the user has read the spec and confirmed it — particularly §8 and §9.
+
+---
+
+## Phase 1b · Design
+
+**Artifact:** `docs/DESIGN_TOKENS.md`, mockups, and a named design of record.
+**Reference:** `design-phase.md`.
+**Do not start:** the plan — build order depends on what is being built.
+
+Numbered `1b` rather than renumbered in, so every existing "Phase 4" reference stays correct.
+
+Design flows out of the spec and feeds the plan. Doing it after the plan means re-planning; doing it
+after implementation means the design review finds structural problems a mockup would have caught
+for free.
+
+- **Tokens before mockups.** And expect to need **semantic tokens of your own alongside the Material
+  roles** — in the corpus a single `surfaceVariant` was carrying control keys, cards and a progress
+  track, which want opposite things under a high-contrast palette (`design-phase.md` §2).
+- **Generate three to five genuinely different directions**, not one proposal or twelve variations.
+  Show each in its worst realistic state — no data, longest label, error — because that is where
+  designs fail and where a mockup is cheapest to change. Claude Design (`/design`) is the tool.
+- **Converge, then name the design of record**, stating which artifact wins when the mockup and the
+  spec disagree.
+- **Generate the theme from a seed colour**, and structure it as swappable from the first commit
+  even when shipping one palette — retrofitting a second palette means touching every screen.
+- **Assert contrast in a unit test** rather than reviewing it (`design-phase.md` §5). It is
+  arithmetic; it runs on the JVM; it catches palettes and states nobody screenshotted.
+
+**Skip this phase** for a single-screen utility with stock Material 3 and no semantic colour — and
+say you are skipping it and why.
+
+**Exit gate:** a design of record the user has seen and confirmed, and `docs/DESIGN_TOKENS.md`
+written from it.
 
 ---
 
@@ -231,8 +262,12 @@ Full detail in `testing-and-bugs.md`; the shape is:
    quality, performance and the intent surface — areas with no equivalent here (`ecosystem.md` §2).
 2. **Partition the findings by file**, dispatch one scoped fix-agent per partition, each with a hard
    allowlist and an explicit "another agent owns X" (see `subagent-delegation.md`).
-3. **Integration build**, then **re-run the Phase 4 suite** — not a spot check.
-4. **Add a regression test for every fix that corrected a *silent* failure.** A silent failure that
+3. **Design review, if the app has a UI** — screenshot every reachable screen and state, then run
+   the three-seat council over the set (`design-phase.md` §6). A code audit and a design review find
+   disjoint defect sets, so this is not covered by step 1. Weight findings by how many seats reached
+   them independently, and convert every P0/P1 into a Phase 4 scenario (`design-phase.md` §7).
+4. **Integration build**, then **re-run the Phase 4 suite** — not a spot check.
+5. **Add a regression test for every fix that corrected a *silent* failure.** A silent failure that
    regresses is invisible again; this is the highest-value test category in the corpus and the one
    most often skipped.
 
