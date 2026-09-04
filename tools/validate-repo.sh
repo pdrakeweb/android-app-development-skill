@@ -155,6 +155,16 @@ for f in docs:
     if f.read_text().count("\n```") % 2 != 0:
         fail.append(f"{f}: unbalanced code fences")
 
+# A bare "scripts/x.sh" resolves against the session's working directory - the
+# user's Android project, which very often has its own scripts/ - not against
+# the skill. Bundled scripts must be referenced through ${CLAUDE_SKILL_DIR}.
+for f in [d for d in docs if d != pathlib.Path("README.md")]:
+    for line_no, line in enumerate(f.read_text().split("\n"), 1):
+        for m in re.finditer(r"(?<!CLAUDE_SKILL_DIR\}/)scripts/[a-z0-9-]+\.sh", line):
+            if "${CLAUDE_SKILL_DIR}/" + m.group(0) in line:
+                continue
+            fail.append(f"{f}:{line_no}: bare {m.group(0)} - prefix with ${{CLAUDE_SKILL_DIR}}/")
+
 # Every script the docs promise must actually ship.
 for f in docs:
     for s in set(re.findall(r"scripts/([a-z0-9-]+\.sh)", f.read_text())):

@@ -285,9 +285,9 @@ Everything else — SDK packages, licences, emulators, builds, installs, launche
 
 | Level | How to handle setup |
 |---|---|
-| **L1–L2** | Run every install yourself, one at a time, each with the full four beats of §12 — why it's needed, what you're about to run, that a prompt is coming. Never paste a command block and ask them to run it. Confirm with `scripts/preflight.sh` rather than asking "did that work?" |
+| **L1–L2** | Run every install yourself, one at a time, each with the full four beats of §12 — why it's needed, what you're about to run, that a prompt is coming. Never paste a command block and ask them to run it. Confirm with `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` rather than asking "did that work?" |
 | **L3–L4** | Run them, showing each command and what it's for in a line. Flag the elevation-and-reboot step up front so it isn't a surprise mid-flow. |
-| **L5** | Point at the reference and `scripts/preflight.sh`. Ask only whether their setup already exists. |
+| **L5** | Point at the reference and `${CLAUDE_SKILL_DIR}/scripts/preflight.sh`. Ask only whether their setup already exists. |
 
 Two things worth saying at **every** level, because both cost real time:
 

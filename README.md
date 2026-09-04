@@ -127,13 +127,16 @@ shipped scripts fail cleanly on bad input. Nothing here is bundled into the skil
 
 ## Scripts
 
-Run them instead of asserting the outcome:
+Run them instead of asserting the outcome. Paths below are from the repo root; **inside the skill
+they are referenced as `${CLAUDE_SKILL_DIR}/scripts/...`**, which resolves wherever the skill is
+installed — a bare `scripts/...` would resolve against the user's own project, which frequently has
+a `scripts/` directory of its own.
 
 | Script | Answers |
 |---|---|
-| `scripts/preflight.sh [dir]` | Does this machine's toolchain match the pins, and what does the project actually declare? |
-| `scripts/verify-install.sh <apk> <pkg>` | Did it install, launch, reach the foreground, and survive without crashing? |
-| `scripts/verify-artifact.sh <apk> [--release]` | Right ABIs, `targetSdk`, v2+ signature, and not accidentally debuggable? |
+| `skills/android-app-development/scripts/preflight.sh [dir]` | Does this machine's toolchain match the pins, and what does the project actually declare? |
+| `skills/android-app-development/scripts/verify-install.sh <apk> <pkg>` | Did it install, launch, reach the foreground, and survive without crashing? |
+| `skills/android-app-development/scripts/verify-artifact.sh <apk> [--release]` | Right ABIs, `targetSdk`, v2+ signature, and not accidentally debuggable? |
 
 ## A note on the examples
 

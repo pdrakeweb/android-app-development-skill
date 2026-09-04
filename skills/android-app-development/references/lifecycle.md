@@ -109,11 +109,11 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 
 - **Every pass ends with a real build and a real run on an emulator** — not "should work now".
   State it explicitly each time rather than assuming it's implied. **Run
-  `scripts/verify-install.sh <apk> <package>`**, which asserts on `Success`, launches, confirms a
+  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`**, which asserts on `Success`, launches, confirms a
   live PID and the foreground activity, and checks the crash buffer — turning "I tested it" from a
   claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
   `bootstrapping.md` for the architecture defaults.
-- **Run `scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
+- **Run `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
   produces configuration-time errors that never name the real cause, and an AGP 8-era scaffold does
   not build at all under AGP 9 (`platform-currency.md` §3).
 - **A first compile of a never-compiled module is its own step**, and its output is worth reading
@@ -152,7 +152,7 @@ assuming a scenario fits:
 | Runtime permission grant/deny | A Journey may auto-grant every permission, so the denial path is never exercised and the test passes for the wrong reason |
 | Fault injection against a peer | Needs a scriptable way to make the peer refuse/hang/starve/vanish |
 | LAN / discovery / real-rig work | The emulator cannot do multicast or unsolicited inbound UDP at all |
-| ARM verification, artifact shape | `scripts/verify-artifact.sh`, not a UI flow |
+| ARM verification, artifact shape | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`, not a UI flow |
 | Toolchain and build-config guards | Not a device behaviour |
 | Soak (fd/thread/memory before-after) | Needs process-level measurement |
 
@@ -252,7 +252,7 @@ with a reason.
 - **Ship the release build, never the debug one** — especially to a watch. In this corpus a debug
   watch APK (33 MB of dex across 16 files) would not install on real hardware; minified it was 2.8 MB
   in one dex. Do not let a plausible wrong theory (architecture, ABI) eat an afternoon: check the
-  artifact directly. **`scripts/verify-artifact.sh <apk> --release` does this in one command** —
+  artifact directly. **`${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh <apk> --release` does this in one command** —
   ABIs, `targetSdk`, signature scheme, dex count, and whether the build is still debuggable.
 - **Verify the signature**, and that a v2 signature is present — v1-only fails to install on modern
   API levels. If there's a companion (watch, second app), **both must use the same key**, or they
