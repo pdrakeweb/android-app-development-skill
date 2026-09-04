@@ -22,6 +22,7 @@ you.
 - [9 · Build the persona, don't just label it](#9--build-the-persona-dont-just-label-it) — the interactive part
 - [10 · ELI5 explanations](#10--eli5-explanations-for-novice-and-beginner)
 - [11 · Council-backed recommendations](#11--council-backed-recommendations-at-low-levels)
+- [12 · Explain, propose, act](#12--explain-propose-act--never-hand-off) — the pattern for installs, changes and research
 
 ---
 
@@ -260,21 +261,32 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 steps genuinely need a human, because they involve a download, a system dialog, a reboot, or
 physical hardware.
 
-**The human steps, in full:**
+**With a package manager, the list of genuinely human steps is short** — shorter than it looks
+from the length of that file. Install the tools *for* them (§12), announcing each one before you
+run it:
 
-1. Install the Java toolkit (a `winget` command, or a download and an installer).
-2. Install Git (same).
-3. Download the Android command-line tools zip.
-4. Turn on **Windows Hypervisor Platform** in *Turn Windows features on or off* — **and reboot**.
-5. Plug in a phone and enable USB debugging, if testing on real hardware.
+```bash
+winget install Git.Git                              # version history
+winget install EclipseAdoptium.Temurin.17.JDK       # the Java toolkit the build needs
+winget install GitHub.cli                           # only if publishing releases
+android sdk install                                 # SDK pieces, no manual download
+```
 
-Everything else — creating emulators, installing SDK packages, accepting licences, building,
-installing, launching, reading logs — is yours to run.
+**What actually needs the person:**
+
+1. **Approving the permission prompts** those commands raise — tell them it's coming first.
+2. **Enabling Windows Hypervisor Platform** — a Windows feature, not a package, so it needs an
+   elevated shell. Discover the feature name rather than guessing it
+   (`Get-WindowsOptionalFeature -Online`).
+3. **The reboot** after that. Nobody can reboot a machine for someone else.
+4. **Plugging in a phone and enabling USB debugging**, if testing on real hardware.
+
+Everything else — SDK packages, licences, emulators, builds, installs, launches, logs — is yours.
 
 | Level | How to handle setup |
 |---|---|
-| **L1–L2** | Do it all. Give them **only** the five steps above, one at a time, as literal click-by-click instructions. Never paste a command block and ask them to run it. Confirm each step worked before moving on, and check with `scripts/preflight.sh` rather than asking "did that work?" |
-| **L3–L4** | Do it, but show the commands as you go and say what each is for. Hand them the five human steps as a short list up front, so they know what's coming and can do them while you work. |
+| **L1–L2** | Run every install yourself, one at a time, each with the full four beats of §12 — why it's needed, what you're about to run, that a prompt is coming. Never paste a command block and ask them to run it. Confirm with `scripts/preflight.sh` rather than asking "did that work?" |
+| **L3–L4** | Run them, showing each command and what it's for in a line. Flag the elevation-and-reboot step up front so it isn't a surprise mid-flow. |
 | **L5** | Point at the reference and `scripts/preflight.sh`. Ask only whether their setup already exists. |
 
 Two things worth saying at **every** level, because both cost real time:
@@ -472,3 +484,109 @@ Two rules that don't bend:
 - **A council informs a decision; it never launders one.** If the verdict is genuinely the user's
   to make — anything in the "needs a decision, not a guess" section of the spec — bring them the
   verdict *and still ask*. Deliberation is not consent.
+
+---
+
+## 12 · Explain, propose, act — never hand off
+
+**Do not tell someone to go install something. Explain why it's needed, say what you're about to
+do, then do it.** Handing a person a download link and a set of instructions is the single fastest
+way to lose a novice, and it is almost never necessary: package managers exist, and the agent has a
+shell.
+
+The shape, in four beats:
+
+1. **Why** — what this thing does *for them*, in one sentence. Not what it is; what it buys.
+2. **What you're about to do** — name the tool, say what will happen.
+3. **What they'll see** — a permission prompt, an elevation dialog, a reboot. Say so *before* it
+   appears, so it reads as expected rather than alarming.
+4. **Then actually do it**, and confirm it worked with a check rather than an assumption.
+
+The canonical example, at Novice/Beginner:
+
+> We need a program called **Git**. It keeps a history of every change we make, so if something
+> breaks later we can go back to a version that worked — a bit like unlimited undo for the whole
+> project.
+>
+> I'd like to install it for you using **winget**, which is Windows' built-in installer. You'll see
+> a permission prompt asking to allow it — review it and approve it if you're comfortable, and I'll
+> take it from there.
+
+...then run `winget install Git.Git`, and confirm with `git --version` rather than assuming.
+
+### It scales with the level — the pattern is constant, the length is not
+
+| Level | How it sounds |
+|---|---|
+| **L1–L2** | The full four beats, as above. One tool at a time |
+| **L3** | "Installing Git via winget — it's the version history we'll rely on when something breaks. Approve the prompt when it appears." |
+| **L4** | "Installing Git and JDK 17 via winget — approve the prompts." |
+| **L5** | "Installing the toolchain via winget." Or just do it and report |
+
+**At L4–L5 the full explanation is noise and reads as condescension.** Compress hard. The beat that
+never gets dropped at any level is beat 3 — telling someone a prompt is coming before it appears —
+because an unexplained elevation dialog is alarming regardless of how senior the person is.
+
+### This is a general pattern, not an install pattern
+
+The same four beats apply wherever you're about to do something on their behalf:
+
+| Situation | The "why" beat sounds like |
+|---|---|
+| **Installing a tool** | What it buys them, not what it is |
+| **Changing a config or a file they own** | What breaks if you don't, and whether it's reversible |
+| **Running a destructive command** (`pm clear`, deleting a build, resetting a device) | What is lost, and that it's deliberate — this one always gets stated in full, at every level |
+| **Research** (web search, a council) | What question you're answering and why you can't answer it from memory |
+| **Installing another skill or plugin** | What it adds, and that the work still happens without it |
+| **A git operation with consequences** (a push, a branch, a merge) | What lands where, and who can see it |
+
+**Destructive actions never get the compressed form.** "I'm going to wipe the app's data so we test
+a genuine first install — you'll lose anything stored in it, which is the point" is the L5 wording
+as much as the L1 wording. Brevity is for explanations, not for consequences.
+
+### Platform-appropriate installers
+
+Name the one that matches their machine and use it; don't send anyone to a download page when a
+package manager will do it:
+
+| Platform | Use | Examples from this skill |
+|---|---|---|
+| **Windows** | `winget` | `winget install Git.Git`, `winget install EclipseAdoptium.Temurin.17.JDK`, `winget install GitHub.cli` |
+| **macOS** | `brew` | `brew install git`, `brew install --cask temurin@17` |
+| **Linux** | the distro's manager | `apt install git`, `dnf install git` |
+| **Android SDK pieces** | `android sdk install`, or `sdkmanager` | Never a manual download when the CLI covers it (`ecosystem.md` §1) |
+
+Check the tool exists before promising it (`winget --version`), and fall back to the download link
+only when it genuinely isn't there — saying "winget isn't on this machine, so this one needs a
+manual download" is fine; leading with the manual download is not.
+
+### What actually still needs a human
+
+After package managers, the list is short — and it is shorter than earlier drafts of this skill
+claimed:
+
+- **Anything needing elevation you can't obtain.** Enabling Windows Hypervisor Platform is a
+  Windows *feature*, not a package: it needs an elevated shell. Don't guess the feature name —
+  discover it (`Get-WindowsOptionalFeature -Online` and look for the hypervisor entry), then walk
+  them through enabling it, whether by command or through *Turn Windows features on or off*.
+- **A reboot.** Nobody can reboot a machine for someone else.
+- **Physical hardware** — plugging in a phone, enabling USB debugging, tapping "allow" on the
+  device's own pairing dialog.
+- **Anything that spends their money or uses their identity** — creating an account, accepting
+  terms, entering a payment method, registering as a developer (`platform-currency.md` §6).
+- **A decision that is theirs**, which is the whole of §11.
+
+Everything else, do yourself.
+
+### When they say no
+
+A denied permission prompt is a legitimate answer, not an obstacle to route around.
+
+- **Say what won't work now**, concretely, and what still will.
+- **Offer the alternative** — a manual download, a different tool, or skipping the feature that
+  needed it.
+- **Never retry the same prompt hoping for a different answer**, and never reach for a way around
+  the refusal.
+- **Never report success you didn't get.** "Git isn't installed, so I can't save a history of our
+  changes yet — want me to try a different way, or carry on without it for now?" is the honest
+  shape, and it is the same rule as every other silent-failure rule in this skill.

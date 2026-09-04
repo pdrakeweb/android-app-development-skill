@@ -21,28 +21,41 @@ see §6.
 ## 0a · Almost none of this is the user's job
 
 **This document is written for you, not for whoever asked for the app.** Read that before pasting
-any of it at them. Only five steps genuinely need a human, because they involve a download, a system
-dialog, a reboot, or physical hardware:
+any of it at them. Most of what follows is yours to run — and with `winget`, that now includes the
+installs themselves:
 
-1. Install the Java toolkit (JDK 17) — one `winget` command, or a download and an installer.
-2. Install Git.
-3. Download the Android command-line tools zip.
-4. Turn on **Windows Hypervisor Platform** in *Turn Windows features on or off*, **then reboot**.
-5. Plug in a phone and switch on USB debugging — only if testing on real hardware.
+```bash
+winget install Git.Git
+winget install EclipseAdoptium.Temurin.17.JDK
+winget install GitHub.cli        # only if publishing releases
+```
 
-Everything else in this file — installing SDK packages, accepting licences, creating emulators,
-booting them, building, installing, launching, reading logs — is yours to run.
+**Explain each one before you run it, then run it** — why it's needed, that you're using winget,
+and that a permission prompt is coming (`user-calibration.md` §12). Do not hand someone a download
+page for something a package manager installs.
 
-**How much of this to expose depends on who you're talking to** (`user-calibration.md` §8): at
-novice levels, hand over those five steps one at a time as click-by-click instructions and never
-paste a command block; at professional level, point at this file and `scripts/preflight.sh` and ask
-what already exists.
+**What genuinely needs the person:**
+
+1. **Approving those permission prompts.**
+2. **Enabling Windows Hypervisor Platform** — a Windows feature rather than a package, so it needs
+   an elevated shell. Discover the feature name instead of guessing
+   (`Get-WindowsOptionalFeature -Online`), then either run it elevated or walk them through *Turn
+   Windows features on or off*.
+3. **The reboot** after that.
+4. **Plugging in a phone and enabling USB debugging**, only if testing on real hardware.
+
+Everything else — SDK packages, licences, emulators, booting, building, installing, launching,
+reading logs — is yours to run.
+
+**How much to narrate depends on who you're talking to** (`user-calibration.md` §8 and §12): at
+novice levels explain each install before running it and take the four human steps one at a time;
+at professional level, point at this file and `scripts/preflight.sh` and ask what already exists.
 
 Two things to say out loud at any level, because both cost real time and neither is the user's
 fault:
 
-- **The reboot in step 4 is not optional.** Without it the emulator is not merely slow — it looks
-  hung, and it looks like a broken install.
+- **The reboot after enabling Windows Hypervisor Platform is not optional.** Without it the emulator
+  is not merely slow — it looks hung, and it looks like a broken install.
 - **On Windows, `android emulator` does not work** (§0). That is a limitation of Google's tool, not
   something they did wrong. Say so, or a beginner will assume they broke it.
 
@@ -75,7 +88,9 @@ the AVD.
 
 ## 1 · Install the toolchain
 
-Nothing here needs Android Studio. The full toolchain is four downloads and one Windows feature.
+Nothing here needs Android Studio, and on Windows most of it is `winget` rather than a download.
+Announce each install before running it (`user-calibration.md` §12) — say what it buys, that you're
+using winget, and that a permission prompt is coming.
 
 ### 1.1 JDK 17
 
@@ -87,19 +102,24 @@ the JDK as the cause.
 java -version        # want 17.x
 ```
 
-Install **Eclipse Temurin 17**: <https://adoptium.net/temurin/releases/?version=17> (Windows x64
-`.msi`), or:
-
 ```powershell
 winget install EclipseAdoptium.Temurin.17.JDK
 ```
+
+Falls back to <https://adoptium.net/temurin/releases/?version=17> (Windows x64 `.msi`) only if
+`winget` isn't on the machine — check with `winget --version` before promising it.
 
 Known good: 17.0.19.
 
 ### 1.2 Git for Windows
 
 Supplies Git Bash, which every command in this document assumes.
-<https://git-scm.com/download/win>, or `winget install Git.Git`.
+
+```powershell
+winget install Git.Git
+```
+
+Fallback: <https://git-scm.com/download/win>.
 
 ### 1.3 Android SDK command-line tools
 
@@ -156,7 +176,11 @@ looking hung.
 
 ### 1.6 GitHub CLI — only if you'll publish releases
 
-<https://cli.github.com/>, or `winget install GitHub.cli`, then `gh auth login`.
+```powershell
+winget install GitHub.cli
+```
+
+Then `gh auth login`. Fallback: <https://cli.github.com/>.
 
 ### 1.7 Gradle — nothing to install
 
