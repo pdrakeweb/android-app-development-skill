@@ -183,6 +183,11 @@ actually draws**, per palette, and fail the build below threshold:
 | **AA** | 4.5:1 | 3:1 |
 | **AAA** | 7:1 | 4.5:1 |
 
+Thresholds and the ratio formula: WCAG 2.2 SC 1.4.3 (<https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum>)
+and 1.4.6 (<https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced>); "large" means 18pt, or
+14pt bold. Android's own accessibility guidance points at the same numbers
+(<https://developer.android.com/guide/topics/ui/accessibility/apps#accessible-colors>).
+
 Hold a high-contrast palette to **AAA**, not AA. The corpus's reasoning is worth keeping: in an
 office the only cost of raising contrast is raising contrast; on a device used in bright sun or in
 the dark, the cost of getting it wrong is someone unable to read the screen when it matters.

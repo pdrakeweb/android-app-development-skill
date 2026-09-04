@@ -53,8 +53,8 @@ worked, in this order:
 6. **Background work** — what runs when the UI isn't up, what schedules it, what it must never do.
 7. **Data and permissions** — what's stored, where, and backup eligibility, plus a **permission
    table** with one row per restricted capability and these columns: the permission, **Essential or
-   Enhancing**, *why it is classified that way*, what the app does when it is denied, and where it is
-   requested (first-run flow or in context). The reasoning column is the one that stops the
+   Enhancing**, *why it is classified that way*, what the app does when it is denied, and which feature
+   the request fires from. The reasoning column is the one that stops the
    classification being re-litigated at the first denial bug (`permissions-storage-cloud.md`).
 8. **What this app must never do** — the verbatim list from the interview.
 9. **Needs a decision, not a guess** — every open question, unresolved, attributed to the user.

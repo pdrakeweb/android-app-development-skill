@@ -134,7 +134,7 @@ not a fact. Adjust on evidence and say that you're doing it.
 | Answers a technical question with "whatever you think" repeatedly | **Down**, or they're just delegating — ask which |
 | Corrects you on an Android detail | **Up**, and take the correction seriously |
 | Pastes a stack trace or a logcat dump | **Up** on tooling at least |
-| Goes quiet after a dense message | **Down.** Silence after complexity is the clearest signal there is |
+| Goes quiet after a dense message | **Down.** Silence after complexity outweighs anything they said about their own level |
 
 That last row matters most. A novice rarely says "you lost me" — they go quiet, or agree with
 everything. **Treat sudden agreement with a complex message as a comprehension failure until proven

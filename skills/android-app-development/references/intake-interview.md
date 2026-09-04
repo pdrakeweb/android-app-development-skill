@@ -64,8 +64,8 @@ Then apply it to everything that follows:
   what an AVD is — and will not ask, because asking feels like admitting ignorance in their own
   field. This is the most commonly mishandled profile (`user-calibration.md` §4).
 - **Re-calibrate on evidence.** Self-assessment is unreliable both ways. Going quiet after a dense
-  message is the clearest signal there is — treat sudden agreement with something complicated as a
-  comprehension failure until proven otherwise (`user-calibration.md` §5).
+  message is a stronger signal than anything they say about themselves — treat sudden agreement with
+  something complicated as a comprehension failure until proven otherwise (`user-calibration.md` §5).
 - **Record the level in `CLAUDE.md`** at Phase 1, with the reason, so the next session doesn't reset
   to a different register (`user-calibration.md` §6).
 - **Keep building the persona after Q0 — a label is not a persona.** The level is scaffolding for
@@ -228,8 +228,8 @@ the wrong altitude — it hands the user a design problem you can solve better f
 Instead, **classify each capability yourself and confirm the split.** Reason from the app's stated
 purpose: **ESSENTIAL** means the core purpose is impossible without it (a camera app without
 `CAMERA`); **ENHANCING** means a feature degrades but the app stays genuinely useful. Enhancing is
-the default, most apps have zero or one essential permission, and the burden of proof is on calling
-something essential (`permissions-storage-cloud.md`).
+the default and the burden of proof is on calling something essential
+(`permissions-storage-cloud.md`).
 
 Play it back in plain words, not jargon:
 
@@ -241,8 +241,8 @@ called essential because it was convenient to code against is how an app becomes
 practice for anyone who declines one prompt.
 
 The classification then decides the rest, so you don't need to ask it: enhancing permissions get the
-four-part degradation contract, essential ones get an explaining screen with a way forward, and any
-app declaring a runtime permission gets the first-run flow by default. All of that is
+four-part degradation contract, essential ones get an explaining screen with a way forward, and every
+request fires from the feature that needs it rather than at startup. All of that is
 `permissions-storage-cloud.md`.
 
 This is also the question that prevents the single most-repeated bug in the corpus: a permission
@@ -307,7 +307,7 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 | **Named safety invariant exists** | What's the automated test that proves it? What's the observable symptom if it's ever violated? Does any module get to opt out? |
 | **Distributed beyond you** | Crash reporting — wanted, or forbidden? Privacy policy needed? What's the update path once someone else has an old build? |
 | **Any UI at all** | What does every screen show with *no data yet*? (Empty states are the highest-yield question in this table — the corpus's rule is that a value computed from nothing must never render as a finding, and an empty first install is the cheapest possible test of it.) |
-| **Any runtime permission at all** | Which are essential and which enhancing, and does the user agree with the split? Is the first-run flow the right call here, or is this the single-permission case that doesn't earn it? What does each denial leave working? Has anyone checked the *permanently* denied state, where the system prompt never appears again? (`permissions-storage-cloud.md`) |
+| **Any runtime permission at all** | Which are essential and which enhancing, and does the user agree with the split? Which feature does each one fire from — and if the answer is "app startup", which feature was it supposed to be? What does each denial leave working? Has anyone checked the *permanently* denied state, where the system prompt never appears again? (`permissions-storage-cloud.md`) |
 | **Any failure path at all** | When something doesn't work, what does the user see? A button that does nothing with no explanation is treated as the worst failure mode in this corpus, worse than an error message. |
 
 Two questions worth asking at the end of *every* interview regardless of answers:
