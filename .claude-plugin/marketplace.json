@@ -1,0 +1,15 @@
+{
+  "name": "pdrakeweb-android",
+  "owner": { "name": "pdrakeweb" },
+  "metadata": {
+    "description": "A process-spine skill for building native Android apps with Claude Code.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "android-app-development",
+      "source": "./",
+      "description": "Guided workflow for specifying, bootstrapping, implementing, auditing, testing and shipping native Android apps."
+    }
+  ]
+}

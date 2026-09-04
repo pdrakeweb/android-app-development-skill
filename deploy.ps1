@@ -107,7 +107,7 @@ try {
     Write-Host ""; Write-Host "=== Skill Deploy ===" -ForegroundColor Magenta
     if ($DryRun) { Warn "(DRY RUN — nothing will be written)" }
 
-    $meta = Get-Frontmatter (Join-Path $root 'SKILL.md')
+    $meta = Get-Frontmatter (Join-Path $root 'skills\android-app-development\SKILL.md')
     Info "Skill: $($meta.Name)"
 
     Step "Building"

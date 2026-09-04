@@ -9,11 +9,88 @@ Paths below use Git Bash (`/c/...`). In PowerShell the same paths are `C:\...`. 
 (`adb.exe`, `emulator.exe`, `aapt2.exe`, `gh.exe`) never understand an MSYS-style `/c/...` path —
 see §6.
 
+**Contents:** [§0 Android CLI first](#0--try-android-cli-first) · [§1 Install](#1--install-the-toolchain) ·
+[§2 Project setup](#2--project-level-setup) · [§3 AVDs](#3--avds-for-phone-tablet-and-wear-os) ·
+[§4 Boot/install/launch](#4--booting-installing-and-launching) · [§5 Verify](#5--verify-its-actually-running) ·
+[§6 Windows path traps](#6--windows-specific-path-and-shell-gotchas) ·
+[§7 Emulator networking limits](#7--emulator-networking-limitations-know-these-before-you-debug-the-wrong-thing) ·
+[§8 Shutdown](#8--shutting-down) · [§9 Scope](#9--scope-of-this-document)
+
+---
+
+## 0a · Almost none of this is the user's job
+
+**This document is written for you, not for whoever asked for the app.** Read that before pasting
+any of it at them. Most of what follows is yours to run — and with `winget`, that now includes the
+installs themselves:
+
+```bash
+winget install Git.Git
+winget install EclipseAdoptium.Temurin.17.JDK
+winget install GitHub.cli        # only if publishing releases
+```
+
+**Explain each one before you run it, then run it** — why it's needed, that you're using winget,
+and that a permission prompt is coming (`user-calibration.md` §12). Do not hand someone a download
+page for something a package manager installs.
+
+**What genuinely needs the person:**
+
+1. **Approving those permission prompts.**
+2. **Enabling Windows Hypervisor Platform** — a Windows feature rather than a package, so it needs
+   an elevated shell. Discover the feature name instead of guessing
+   (`Get-WindowsOptionalFeature -Online`), then either run it elevated or walk them through *Turn
+   Windows features on or off*.
+3. **The reboot** after that.
+4. **Plugging in a phone and enabling USB debugging**, only if testing on real hardware.
+
+Everything else — SDK packages, licences, emulators, booting, building, installing, launching,
+reading logs — is yours to run.
+
+**How much to narrate depends on who you're talking to** (`user-calibration.md` §8 and §12): at
+novice levels explain each install before running it and take the four human steps one at a time;
+at professional level, point at this file and `scripts/preflight.sh` and ask what already exists.
+
+Two things to say out loud at any level, because both cost real time and neither is the user's
+fault:
+
+- **The reboot after enabling Windows Hypervisor Platform is not optional.** Without it the emulator
+  is not merely slow — it looks hung, and it looks like a broken install.
+- **On Windows, `android emulator` does not work** (§0). That is a limitation of Google's tool, not
+  something they did wrong. Say so, or a beginner will assume they broke it.
+
+## 0 · Try Android CLI first
+
+Most of §1 is now automatable. Google's **Android CLI** installs the SDK component-by-component,
+scaffolds projects, deploys, and manages AVDs — see `ecosystem.md` §1.
+
+```bash
+android sdk install
+android create
+android run
+```
+
+**On Windows there is a verified, load-bearing exception: `android emulator` is disabled, and
+downloading the CLI from PowerShell is not supported.** So on Windows the split is:
+
+| Job | Use |
+|---|---|
+| SDK install, scaffolding, deploy, docs, skills | **Android CLI** (§0) |
+| **Creating and booting AVDs** | **The manual path below** (§3–§4) |
+
+On macOS and Linux, `android emulator` covers the AVD half too and §3 becomes a fallback.
+
+**Everything below therefore remains current on Windows.** It is not legacy — it is the supported
+path for the emulator half of the job, and the §6–§7 gotchas apply no matter which tool created
+the AVD.
+
 ---
 
 ## 1 · Install the toolchain
 
-Nothing here needs Android Studio. The full toolchain is four downloads and one Windows feature.
+Nothing here needs Android Studio, and on Windows most of it is `winget` rather than a download.
+Announce each install before running it (`user-calibration.md` §12) — say what it buys, that you're
+using winget, and that a permission prompt is coming.
 
 ### 1.1 JDK 17
 
@@ -25,19 +102,24 @@ the JDK as the cause.
 java -version        # want 17.x
 ```
 
-Install **Eclipse Temurin 17**: <https://adoptium.net/temurin/releases/?version=17> (Windows x64
-`.msi`), or:
-
 ```powershell
 winget install EclipseAdoptium.Temurin.17.JDK
 ```
+
+Falls back to <https://adoptium.net/temurin/releases/?version=17> (Windows x64 `.msi`) only if
+`winget` isn't on the machine — check with `winget --version` before promising it.
 
 Known good: 17.0.19.
 
 ### 1.2 Git for Windows
 
 Supplies Git Bash, which every command in this document assumes.
-<https://git-scm.com/download/win>, or `winget install Git.Git`.
+
+```powershell
+winget install Git.Git
+```
+
+Fallback: <https://git-scm.com/download/win>.
 
 ### 1.3 Android SDK command-line tools
 
@@ -74,7 +156,7 @@ yes | "$SDKM" \
 and `apksigner` (verify signatures). Bump `android-36` / `36.0.0` to whatever `compileSdk` the
 project actually declares — check `gradle/libs.versions.toml` first rather than assuming.
 
-### 1.5 Hardware acceleration
+### 1.5 Hardware acceleration — use WHPX
 
 ```bash
 "$SDK/emulator/emulator.exe" -accel-check
@@ -84,9 +166,21 @@ If it fails, enable **Windows Hypervisor Platform** in *Turn Windows features on
 reboot. Without it the emulator is not "a bit sluggish" — it is unusably slow, to the point of
 looking hung.
 
+**WHPX is the right answer, and the only one with a future.** Two dead ends to avoid:
+
+- **HAXM is deprecated** (Intel discontinued it). From emulator **36.2.x.x** the emulator no longer
+  uses it at all.
+- **AEHD — the Android Emulator hypervisor driver — is sunset on 2026-12-31.** It still works until
+  then. Do not install it on a new machine; you would be adopting something with a published expiry
+  date. If an older setup guide tells you to install AEHD, that guide is stale.
+
 ### 1.6 GitHub CLI — only if you'll publish releases
 
-<https://cli.github.com/>, or `winget install GitHub.cli`, then `gh auth login`.
+```powershell
+winget install GitHub.cli
+```
+
+Then `gh auth login`. Fallback: <https://cli.github.com/>.
 
 ### 1.7 Gradle — nothing to install
 
@@ -103,7 +197,10 @@ AVDM="$SDK/cmdline-tools/latest/bin/avdmanager.bat"
 EMU="$SDK/emulator/emulator.exe"
 ```
 
-Known-good baseline on this machine: adb 1.0.41, emulator 36.5.11.0, JDK 17.0.19, Gradle 8.14.3.
+Known-good baseline on the machine this was written from: adb 1.0.41, emulator 36.5.11.0,
+JDK 17.0.19. **Gradle and AGP are not pinned here** — they belong to the project's version catalog,
+and the current values live in `platform-currency.md` §1 (as of 2026-09-04: AGP 9.4.0 on Gradle
+9.6.0). `scripts/preflight.sh` checks this machine against them.
 
 ---
 

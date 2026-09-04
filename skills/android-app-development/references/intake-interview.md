@@ -10,9 +10,13 @@ down, a permission that was never requested at runtime, a watch build that would
 
 ## How to run it
 
+- **Ask Q0 first, alone.** Everything else is worded based on its answer (`user-calibration.md`).
 - **Ask in batches of 2–4, not one at a time.** Use the question tool with concrete options plus a
   recommended default, so the answer can be a click rather than an essay. A ten-question
   interrogation delivered one message at a time is how an intake gets abandoned halfway.
+- **Never use a term from the glossary without translating it** (`user-calibration.md` §7) unless
+  Q0 said the person already speaks Android. Every question below is written at roughly
+  Intermediate; re-word up or down from there rather than reading it out verbatim.
 - **Broad to narrow.** The first four questions decide which of the later ones are even relevant.
   Never ask a question whose answer is already implied by an earlier one.
 - **Always offer a default and say what you'd pick.** "You choose" must be a legitimate answer to
@@ -32,9 +36,58 @@ down, a permission that was never requested at runtime, a watch build that would
 
 ---
 
+## Question 0 · Who am I talking to?
+
+**Ask this before Q1, on its own.** It decides how every question below gets worded, how much you
+explain, how much you decide rather than ask, and how much of the toolchain setup you hand over.
+Full detail — the five levels, the calibration table, the plain-language glossary — is in
+`user-calibration.md`.
+
+> Before we start — how much software or Android experience do you have? I'll match how much I
+> explain to your answer and pick sensible defaults for anything you'd rather not decide. No wrong
+> answer, and you can tell me to speed up or slow down at any point.
+
+**Novice** (never written code) · **Beginner** (some scripts or tutorials) · **Intermediate**
+(can program, new to Android) · **Advanced** (professional developer, other platforms) ·
+**Professional app developer**.
+
+Frame it as tuning, never as a test, and **default to Intermediate** if they don't answer —
+over-explaining costs one sentence to correct, while under-explaining loses someone silently.
+
+Then apply it to everything that follows:
+
+- **At Novice/Beginner, ask fewer questions, not more.** Q1, Q7, Q9 and Q10 are the ones that
+  genuinely need their judgement; decide the rest yourself and say plainly what you picked and why.
+  Asking a novice to choose a navigation library is not consultation, it's abdication.
+- **At Intermediate/Advanced, keep general programming vocabulary and explain the Android-specific
+  terms anyway.** A strong engineer new to Android knows what a build system is and does not know
+  what an AVD is — and will not ask, because asking feels like admitting ignorance in their own
+  field. This is the most commonly mishandled profile (`user-calibration.md` §4).
+- **Re-calibrate on evidence.** Self-assessment is unreliable both ways. Going quiet after a dense
+  message is the clearest signal there is — treat sudden agreement with something complicated as a
+  comprehension failure until proven otherwise (`user-calibration.md` §5).
+- **Record the level in `CLAUDE.md`** at Phase 1, with the reason, so the next session doesn't reset
+  to a different register (`user-calibration.md` §6).
+- **Keep building the persona after Q0 — a label is not a persona.** The level is scaffolding for
+  the first two minutes; after that you are modelling one specific person: which words they've
+  earned, how much detail they want, whether they answer choices or bounce them back, what they
+  bring up unprompted. Build it by noticing, not by interrogating — mirror their words back, offer
+  a depth choice once, and state your read back in one plain sentence so a wrong guess costs one
+  exchange instead of a project. Never show them the level label (`user-calibration.md` §9).
+- **At Novice/Beginner, every explanation is ELI5** — no assumed background, which is not the same
+  as talking down. Familiar comparison, what it means for them, what you're doing about it, stop.
+  The analogy has to actually hold; a wrong one produces confident wrong expectations that surface
+  three weeks later (`user-calibration.md` §10).
+- **Don't just pick for them — research it, then recommend.** The less able someone is to evaluate a
+  choice, the more rigour it deserves, because nobody downstream will catch a bad one. For anything
+  expensive to reverse, convene the **`council`** skill if it's installed and report the verdict as
+  decision / reason / honest cost / confidence / the one thing that would flip it. Without it, do
+  the same inline with web search. A council informs a decision; it never launders one — if the
+  call is genuinely theirs, bring the verdict *and still ask* (`user-calibration.md` §11).
+
 ## The ten core questions
 
-Ask these — or the subset that survives earlier answers — every time.
+Ask these — or the subset that survives Q0 and earlier answers — every time.
 
 ### 1 · What is this app for, and what is it deliberately *not*?
 
@@ -73,17 +126,48 @@ If a watch is in scope, also ask now: **does it work standalone, or does it requ
 because "waiting for your settings from the phone" being correct-behaviour-not-a-bug has to be
 decided before the first test run, not after.
 
-### 4 · What hardware and OS floor is it actually for?
+### 4 · How old a phone does this need to work on?
 
-Named device(s) if there are any (*"a Wear OS 4 smartwatch"*, *"a 12-inch Android tablet"*, *"my
-current-generation Pixel"*), plus `minSdk` / `targetSdk`.
+**Ask it in those words. Never ask the user for `minSdk` or `targetSdk`** — those are outputs of
+this question, not inputs to it, and asking for them is how an interview stalls.
 
-The named device matters more than the SDK numbers, because it decides:
-- **which Wear OS / Android versions must actually be tested**, not just declared supported;
-- **the shipping ABI**. If it ships to ARM hardware, say so in the spec in those words — an x86_64
-  emulator is then a convenience, not a verification target, and every test needs an arch tag
-  (see `windows-toolchain-and-emulators.md` and `lifecycle.md` Phase 4);
+Offer these, and say which you'd pick:
+
+| Option | Means | Cost |
+|---|---|---|
+| **Just my own device(s)** | Whatever you actually carry | Cheapest. Modern APIs available, one device to test |
+| **Anything from the last ~5 years** | Roughly Android 12 and up | The usual default. Little extra work |
+| **Anything still in real use** | Roughly Android 9 and up | Some features need a fallback path; more testing |
+| **A specific old device I own** | Named hardware sets the floor | Whatever that device runs decides it — ask which |
+
+"You choose" is a legitimate answer: pick **anything from the last ~5 years**, say you picked it,
+and record it as your decision. `platform-currency.md` §9 maps each answer to the actual number.
+
+Then, separately: **which specific device(s) will you actually test on?** (*"a Wear OS 4
+smartwatch"*, *"a 12-inch Android tablet"*, *"my current-generation Pixel"*). The named device
+matters more than any number, because it decides:
+
+- **which Android versions must actually be tested**, not just declared supported;
+- **the shipping ABI** — the chip type the app's native code is built for. If it ships to ARM
+  hardware, say so in the spec in those words: an x86_64 emulator is then a convenience, not a
+  verification target, and every test needs an arch tag (see `windows-toolchain-and-emulators.md`
+  and `lifecycle.md` Phase 4);
 - whether a real-hardware test pass is required before "done" can be claimed. It usually is.
+
+> **The misconception worth heading off, because it is nearly universal.**
+> This becomes two numbers, and they do *not* do the same job:
+>
+> - **`minSdk` — the oldest Android that can install the app.** This is the compatibility dial, and
+>   it is the only one this question sets. Lower means more devices and more work.
+> - **`targetSdk` — which Android's *behaviour rules* the app follows.** It is **not** a floor, and
+>   raising it does **not** drop older devices. An app with `targetSdk 36` and `minSdk 28` still
+>   installs and runs on a 2018 phone.
+>
+> So "target the newest Android" and "support older Androids" are **not opposites** — a normal app
+> does both at once, and that is the expected configuration, not a compromise. `targetSdk` is also
+> barely a choice: Play requires 36 for anything published (`platform-currency.md` §5). If a user
+> says they want to "support older phones", they are talking about `minSdk`; confirm that reading
+> back to them in plain words rather than assuming either way.
 
 ### 5 · What visual style?
 
@@ -163,6 +247,12 @@ This single answer decides:
 - **whether live credentials may be baked into the build.** Personal, non-distributed builds may do
   this deliberately — but a GitHub releases page *is* a distribution channel, informally or not.
   See the boundary in `permissions-storage-cloud.md`.
+- **which distribution identity is needed.** Developer verification is rolling out (first countries
+  2026-09-30, global through 2027). ADB sideloading to your own device is unaffected; a **limited
+  distribution account** covers "a handful of named people" with no government ID, no fee, and up
+  to 20 devices; Play means the `targetSdk` policy deadlines bind from day one. For "a handful of
+  named people", **offer the limited distribution account as the default** rather than a GitHub
+  releases page — it is the instrument built for that answer. See `platform-currency.md` §6.
 - **signing**: whether a real keystore is needed now, and (if there's a watch or a companion) that
   both modules must use the *same* key or the pairing silently fails.
 - **whether release/R8 builds are on the critical path from day one.** They are for anything going
@@ -179,7 +269,8 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 |---|---|
 | **Watch in scope** | Which Wear OS versions does the target watch *actually run* today? Tiles or complications? What shows when unpaired? Is the watch a sensor source or the primary UI? Battery expectations for continuous sensing? |
 | **Background operator** | What wakes it (schedule, sensor, push, boot)? Foreground-service type? What must survive Doze and reboot? What's the user-visible evidence it's running — and what does it show when it has silently stopped? |
-| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? |
+| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? **If a tablet is in scope, "orientation locked" is not achievable via the manifest** — at `targetSdk` 36 those restrictions are ignored on screens ≥600dp, so a portrait-locked design gets a landscape window anyway (`platform-currency.md` §4). Decide the adaptive layout now, not after the first tablet screenshot |
+| **Native code or a vendor SDK** | Which ABIs ship? 16 KB page support (required for native `.so`)? On Wear OS, both 32- and 64-bit are required by Play since 2026-09-15. An x86_64 emulator pass is not evidence for an `arm64` target |
 | **AI/LLM** | Routing rules between models? What's never sent? Streaming or batch? What does a refusal, a timeout, and a truncated response each look like on screen? Cost ceiling? |
 | **On-device model** | How big is the download, and over what network? Where is it cached, and is integrity verified? What does the app do while it downloads, and if it fails halfway? |
 | **Sensitive data** | Encryption at rest? Passphrase — user-supplied or derived? What's the recovery story if it's forgotten? Who else physically handles the device? Is a demo/fixture dataset needed for testing — and is fabricating data about a real person acceptable here? (In the corpus, it was not.) |

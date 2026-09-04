@@ -1,6 +1,33 @@
 # Delegating to Subagents
 
+**Contents:** [Choosing a surface](#choosing-a-surface-before-choosing-a-subagent) ·
+[A — Research delegation](#pattern-a--research-delegation) ·
+[B — Scoped parallel fix agents](#pattern-b--scoped-parallel-fix-agents) ·
+[C — Parallel sessions](#pattern-c--parallel-sessions-on-feature-branches-and-the-integration-pass) ·
+[When to use which](#when-to-use-which)
+
 Two distinct subagent patterns show up in the corpus, for two different jobs. Don't conflate them — a research subagent and a fix subagent want different prompt shapes.
+
+## Choosing a surface, before choosing a subagent
+
+A subagent is one of several places project guidance can live, and they have genuinely different costs. Anthropic's own breakdown:
+
+| Surface | Context cost | Survives compaction | Good for |
+|---|---|---|---|
+| **`CLAUDE.md`** | Loaded at session start, memoized, **high** | Re-read after compaction | A short orientation handout. Keep it short — everything in it is paid for on every session |
+| **Rules** | Re-injected on compaction; path-scopeable | Yes | Guidance that must apply to specific directories |
+| **Skills** | Name + description at start; body on invocation, against a **shared budget across invoked skills, oldest dropped first** | — | Teaching a workflow. This skill, and the Google ones |
+| **Subagents** | **Zero** until called; returns only a summary | N/A | Isolating a big search or a scoped fix |
+| **Hooks** | Bypass compaction entirely | Yes | **Enforcement** |
+
+The practical rule: **enforce with hooks or permissions, teach with skills, isolate with subagents, and keep `CLAUDE.md` short.**
+
+That last distinction matters for this skill specifically. Several house rules are *enforcement*, not guidance — "every implementation pass ends with a real build and a real test", "never weaken a guard to make something compile". Prose that the model may or may not honour on turn forty is the wrong shape for those. Two better shapes, both shipped here:
+
+- **Deterministic scripts** (`scripts/`) — `verify-install.sh` turns "I tested it" from a claim into a command with an exit code, and `preflight.sh` catches an AGP-8-era scaffold before the first build.
+- **Hooks** (`hooks/` in this plugin, opt-in) — fire on the tool call itself, so they cannot be forgotten mid-session.
+
+The shared-budget detail is also why `ecosystem.md` says to install Google's skills **at the phase that needs them** rather than all at once: every invoked skill body competes with this one for the same space.
 
 ## Pattern A — Research delegation
 

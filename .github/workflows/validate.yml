@@ -1,0 +1,45 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # The hook and several checks are shell; shellcheck is the one tool the
+      # local runs usually lack, so CI is where it actually gets enforced.
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      # Same script contributors run locally — CI must not drift from it.
+      - name: Validate repository
+        run: bash tools/validate-repo.sh
+
+      # The scripts ship to users and run on their machines, so a broken
+      # argument path is a defect even though there is no device in CI.
+      - name: Smoke-test the shipped scripts
+        run: |
+          set -euo pipefail
+          S=skills/android-app-development/scripts
+
+          # Each must fail cleanly on bad input rather than hanging or crashing.
+          bash "$S/verify-artifact.sh" /nonexistent.apk && exit 1 || true
+          bash "$S/verify-install.sh" && exit 1 || true
+
+          # preflight must survive a directory that is not an Android project.
+          tmp=$(mktemp -d)
+          bash "$S/preflight.sh" "$tmp" >/dev/null
+          echo "shipped scripts handle bad input without hanging or crashing"

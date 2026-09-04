@@ -1,5 +1,15 @@
 # Permissions, Storage, and Cloud Sync
 
+**Contents**
+
+- [Runtime permissions](#runtime-permissions) — the corpus's single most-repeated bug
+- [Local storage](#local-storage) · [Schema and migration discipline](#schema-and-migration-discipline)
+- [Multi-device sync](#multi-device-sync-phone--watch-or-any-two-clients)
+- [Cloud backup / sync](#cloud-backup--sync-google-drive)
+- [Cloud LLM / API access](#cloud-llm--api-access-generally)
+- [On-device and hybrid inference](#on-device-and-hybrid-inference) — Firebase AI Logic, AppFunctions
+- [The "personal APK" exception](#the-personal-apk-live-credentials-exception)
+
 ## Runtime permissions
 
 **The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not enough on API 33/34+.** A real-hardware bug report on a Wear OS app nailed the exact failure mode:
@@ -7,6 +17,11 @@
 > BODY_SENSORS IS PROBABLY NEVER REQUESTED AT RUNTIME. Declaring it in the manifest is not enough on API 33/34. If the app never calls requestPermissions, Health Services will refuse and monitoring cannot start — and no user without adb could ever get past it.
 
 Treat this as a standing audit item, not something you check once: **every restricted API call needs (a) the manifest declaration, (b) an explicit runtime request on first need, and (c) a re-check immediately before the gated action fires, with a visible reason and a route to Settings if denied.** "Missing required runtime permissions before calling restricted APIs" is also a standing line item in the general adversarial audit (see `testing-and-bugs.md`) — don't treat it as Wear-OS-specific.
+
+Two additions to the standing checklist:
+
+- **Journeys may auto-grant every permission.** If the test suite uses Journeys (`ecosystem.md` §3), permission-denial scenarios can pass without ever exercising the denial path — the test reports green precisely where this bug class lives. Keep denial cases as ADB tests with explicit `pm revoke`.
+- **LAN discovery may need a runtime permission now.** Recent Android versions have moved local-network access behind a user-granted permission. **This is unverified for current AOSP** — it was observed in a vendor fork's change list and not confirmed against AOSP behaviour first-hand. If the app does mDNS/NSD or any LAN discovery (`panel-remote`'s domain), **check the behaviour on the actual target OS version before assuming either way**, and treat a discovery failure on a real device as a possible permission problem rather than only a network one. Do not write a permission request into the manifest on the strength of this paragraph.
 
 Corollary from the same bug report, worth generalizing: **a missing optional input should degrade the feature, never silently block it.** ("Missing today's resting HR must not stop monitoring... fall back to the learned profile value, monitor anyway, and show plainly that it's running on last-known rather than today's figure.") The same logic applies to any permission-gated feature — decide explicitly what the degraded-but-functional state looks like when a permission is denied, rather than leaving the feature just... not working.
 
@@ -83,6 +98,23 @@ From `field-assistant` (cloud inference via a third-party LLM gateway — not Go
 - **A documented spend guardrail that isn't actually enforced is a finding, not a feature.** A cost cap that exists as a settings field and a comment, with nothing reading it on the request path, is worse than no cap: it's a claim of protection. Either wire it to the call site or delete it.
 - **Decide the throttle/rate-limit fallback before you hit one.** Which model does it fall back to, does the user get told, and does the fallback persist for the session or just the request? Write the answer into the testing playbook alongside how to force the condition.
 
+## On-device and hybrid inference
+
+`field-assistant`'s hand-rolled on-device/cloud routing is now a first-party API, and anything built new should start there rather than reimplementing the routing layer.
+
+**Firebase AI Logic hybrid inference** switches dynamically between Gemini Nano on-device and cloud Gemini, using ML Kit's Prompt API locally, configured through `OnDeviceConfig` with `InferenceMode.PREFER_ON_DEVICE` or `PREFER_IN_CLOUD`.
+
+**The word `PREFER` is the whole problem, and it is a silent-failure trap of exactly the shape this skill exists to catch.** A preference is not a guarantee. If on-device inference is a *privacy requirement* rather than a performance preference — which is the usual reason anyone wants it — then `PREFER_ON_DEVICE` will happily fall back to the cloud and send the very data the requirement existed to keep local, with nothing on screen to say so.
+
+So, as a standing audit item for any app using hybrid inference:
+
+- **Listen to the model download state and gate the feature on it.** The on-device model is a large download that may be absent, partial, or still arriving.
+- **If on-device is a hard requirement, fail loudly rather than degrading to cloud.** Say the feature is unavailable until the local model is ready. Do not silently satisfy the request the other way.
+- **Make the routing decision visible** wherever it carries a privacy meaning — the user should be able to tell which path answered.
+- This is a specific instance of the general rule in intake Q6: decide what happens offline, rate-limited, or with the model missing, *before* it happens.
+
+Also worth knowing, same platform generation: **AppFunctions** lets an app expose tools and data to system agents (Google ships a `device-ai/appfunctions` skill), the **Structured Output API** replaces brittle parsing of model output — adopt it rather than regex-scraping a response — and **ADK for Android** covers multi-agent workflows.
+
 ## The "personal APK, live credentials" exception
 
 One project explicitly bakes live API credentials into the APK, on the record:
@@ -90,3 +122,10 @@ One project explicitly bakes live API credentials into the APK, on the record:
 > Live credentials are supposed to be baked in. This is on purpose, we bake live credentials since it is not a distributed APK but a personal one.
 
 Treat this as a **confirmed, explicit exception for a specific app**, not a default to assume for any new project. Before applying it: confirm the APK genuinely won't be distributed, shared, or published anywhere (including a public GitHub release page — note the corpus also has a project publishing beta APKs to a GitHub releases page, which is a distribution channel even if informal). If there's any chance of distribution, credentials belong in a build-time-injected config the release pipeline can swap, not baked into source.
+
+**Distribution now carries a second question: developer verification.** From 2026-09-30 in Brazil, Indonesia, Singapore and Thailand — and globally through 2027 — apps installed from participating app stores on certified devices must come from a verified developer. Two things follow, and both are good news for the personal-build case:
+
+- **ADB sideloading is unaffected**, and there is an explicit advanced flow for installing from unverified developers. A build you `adb install` on your own device is still just a build.
+- **Limited distribution accounts** cover the "a handful of named people" answer to intake Q10: no government ID, no fee, up to **20 devices**. That is the right instrument for most informal sharing, and it is a better answer than a GitHub releases page for anything you'd rather not treat as public distribution.
+
+Record which of these applies in the spec. See `platform-currency.md` §6.

@@ -2,3 +2,9 @@
 *.ps1 text eol=crlf
 # Markdown normalises to LF in the repo.
 *.md text eol=lf
+# Shell scripts and JS MUST be LF. A .sh checked out with CRLF fails to execute
+# with "bad interpreter: No such file or directory", which names neither the
+# line endings nor the file as the cause.
+*.sh text eol=lf
+*.js text eol=lf
+*.json text eol=lf
