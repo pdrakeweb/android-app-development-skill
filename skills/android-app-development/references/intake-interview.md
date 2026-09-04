@@ -222,11 +222,32 @@ Anything past "preferences only" pulls in these, and they're quick:
 Sensors (heart rate/body) · location · camera/mic · Bluetooth · LAN/network discovery ·
 notifications · background execution · file access.
 
-For each one selected, ask **what the app should do when the permission is denied or the capability
-is missing.** "It won't work" is not an answer — the corpus rule is that a missing optional input
-degrades the feature and says so plainly; it never silently blocks it. This is also the question
-that prevents the single most-repeated bug in the corpus: a permission declared in the manifest and
-never requested at runtime, so the feature installs, launches, looks healthy and never functions.
+**Do not ask, per capability, what should happen when it is denied.** That is the right question at
+the wrong altitude — it hands the user a design problem you can solve better from the answer to Q1.
+
+Instead, **classify each capability yourself and confirm the split.** Reason from the app's stated
+purpose: **ESSENTIAL** means the core purpose is impossible without it (a camera app without
+`CAMERA`); **ENHANCING** means a feature degrades but the app stays genuinely useful. Enhancing is
+the default, most apps have zero or one essential permission, and the burden of proof is on calling
+something essential (`permissions-storage-cloud.md`).
+
+Play it back in plain words, not jargon:
+
+> I read **camera** as essential — without it there is no app — and **location** and
+> **notifications** as enhancing: the app works, those two features don't. Correct?
+
+Record the classification **and the reasoning** in the spec, not just the answer. A permission
+called essential because it was convenient to code against is how an app becomes uninstallable in
+practice for anyone who declines one prompt.
+
+The classification then decides the rest, so you don't need to ask it: enhancing permissions get the
+four-part degradation contract, essential ones get an explaining screen with a way forward, and any
+app declaring a runtime permission gets the first-run flow by default. All of that is
+`permissions-storage-cloud.md`.
+
+This is also the question that prevents the single most-repeated bug in the corpus: a permission
+declared in the manifest and never requested at runtime, so the feature installs, launches, looks
+healthy and never functions.
 
 Network discovery (mDNS/NSD) and inbound UDP get one extra note at intake, not at debug time: they
 **cannot work on a standard emulator** and force a real-device test rig.
@@ -286,6 +307,7 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 | **Named safety invariant exists** | What's the automated test that proves it? What's the observable symptom if it's ever violated? Does any module get to opt out? |
 | **Distributed beyond you** | Crash reporting — wanted, or forbidden? Privacy policy needed? What's the update path once someone else has an old build? |
 | **Any UI at all** | What does every screen show with *no data yet*? (Empty states are the highest-yield question in this table — the corpus's rule is that a value computed from nothing must never render as a finding, and an empty first install is the cheapest possible test of it.) |
+| **Any runtime permission at all** | Which are essential and which enhancing, and does the user agree with the split? Is the first-run flow the right call here, or is this the single-permission case that doesn't earn it? What does each denial leave working? Has anyone checked the *permanently* denied state, where the system prompt never appears again? (`permissions-storage-cloud.md`) |
 | **Any failure path at all** | When something doesn't work, what does the user see? A button that does nothing with no explanation is treated as the worst failure mode in this corpus, worse than an error message. |
 
 Two questions worth asking at the end of *every* interview regardless of answers:

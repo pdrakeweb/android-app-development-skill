@@ -12,18 +12,165 @@
 
 ## Runtime permissions
 
+This is the canonical statement of the permission doctrine. `SKILL.md`, `intake-interview.md` Q8,
+`lifecycle.md` and `testing-and-bugs.md` all point here rather than restating it.
+
+**Contents:** [The gotcha](#the-gotcha-that-started-this) · [Essential vs enhancing](#essential-vs-enhancing)
+· [The first-run flow](#the-first-run-flow-is-the-default) · [Degradation contract](#the-degradation-contract)
+· [Permanent denial](#permanent-denial-is-real-and-most-designs-ignore-it) · [Standing checklist](#standing-checklist)
+
+### The gotcha that started this
+
 **The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not enough on API 33/34+.** A real-hardware bug report on a Wear OS app nailed the exact failure mode:
 
 > BODY_SENSORS IS PROBABLY NEVER REQUESTED AT RUNTIME. Declaring it in the manifest is not enough on API 33/34. If the app never calls requestPermissions, Health Services will refuse and monitoring cannot start — and no user without adb could ever get past it.
 
 Treat this as a standing audit item, not something you check once: **every restricted API call needs (a) the manifest declaration, (b) an explicit runtime request on first need, and (c) a re-check immediately before the gated action fires, with a visible reason and a route to Settings if denied.** "Missing required runtime permissions before calling restricted APIs" is also a standing line item in the general adversarial audit (see `testing-and-bugs.md`) — don't treat it as Wear-OS-specific.
 
-Two additions to the standing checklist:
-
-- **Journeys may auto-grant every permission.** If the test suite uses Journeys (`ecosystem.md` §3), permission-denial scenarios can pass without ever exercising the denial path — the test reports green precisely where this bug class lives. Keep denial cases as ADB tests with explicit `pm revoke`.
-- **LAN discovery may need a runtime permission now.** Recent Android versions have moved local-network access behind a user-granted permission. **This is unverified for current AOSP** — it was observed in a vendor fork's change list and not confirmed against AOSP behaviour first-hand. If the app does mDNS/NSD or any LAN discovery (`panel-remote`'s domain), **check the behaviour on the actual target OS version before assuming either way**, and treat a discovery failure on a real device as a possible permission problem rather than only a network one. Do not write a permission request into the manifest on the strength of this paragraph.
-
 Corollary from the same bug report, worth generalizing: **a missing optional input should degrade the feature, never silently block it.** ("Missing today's resting HR must not stop monitoring... fall back to the learned profile value, monitor anyway, and show plainly that it's running on last-known rather than today's figure.") The same logic applies to any permission-gated feature — decide explicitly what the degraded-but-functional state looks like when a permission is denied, rather than leaving the feature just... not working.
+
+### Essential vs enhancing
+
+**Classify every permission before designing anything around it.** Two buckets, and the second is
+the default:
+
+| | Means | Test |
+|---|---|---|
+| **ESSENTIAL** | The app's core purpose is impossible without it | A camera app without `CAMERA`. A step counter without `ACTIVITY_RECOGNITION` |
+| **ENHANCING** | A feature is degraded; the app remains genuinely useful | Location that stamps a record. Notifications that remind |
+
+**Most apps have zero or one essential permission.** The burden of proof is on calling something
+essential, and the honest test is: *with this denied, is there still an app here?* If a user could
+open it, do the main thing, and get value, it is enhancing — no matter how central it feels to the
+implementation.
+
+> **The anti-pattern, and it is the common one:** a permission classified essential because it was
+> convenient to code against. That is how an app becomes uninstallable-in-practice for someone who
+> declines one prompt — they hit a wall on first run and never come back. The classification is a
+> product decision wearing an engineering disguise.
+
+**Derive the classification, don't ask for it cold.** Reason from the app's stated purpose (intake
+Q1), propose the split, and confirm it in plain words. Record the classification *and the reasoning*
+in the spec (`lifecycle.md` Phase 1, item 7) — a bare "essential" that nobody can re-derive gets
+re-litigated at the first denial bug.
+
+### The first-run flow is the default
+
+**Whenever the app declares any runtime permission, the recommended default is a first-run
+onboarding sequence**, not just-in-time prompting at the moment of use. Just-in-time is the API
+docs' default and it is fine for a single permission; it is poor for three, because the user meets
+three system dialogs with no context and declines the one they don't understand.
+
+The shape:
+
+- **One explainer page per permission, before the system prompt fires.** Plain language: what it is
+  for, and what specifically stops working without it. Not "we need location to improve your
+  experience" — *"location stamps each entry with where you were; without it entries still save,
+  just without a place."*
+- **Requested one at a time. Never batched.** A `RequestMultiplePermissions` call presenting three
+  dialogs back to back is the batching this forbids, whatever the API allows.
+- **Denial never blocks progress through onboarding.** The Continue control stays enabled.
+- **A denial-summary screen afterwards**, listing exactly what will not work, with a per-item button
+  to try again and a **"Continue anyway" that is always enabled**.
+- **Skippable in full, and re-reachable from Settings** — someone who skipped on a train needs a way
+  back that is not a reinstall.
+
+**When to deviate** — the flow is the default, not a mandate, and departing from it is fine as long
+as you say why:
+
+| Situation | Do instead |
+|---|---|
+| Permission tied to one rarely-used feature | Request it in context, at the feature |
+| Exactly one permission, and its purpose is obvious from the screen | The sequence may be more ceremony than it earns |
+| A permission the OS only grants in a specific flow | Follow the platform's flow; note it in the spec |
+
+Build on the documented workflow — `ContextCompat.checkSelfPermission()`, then
+`shouldShowRequestPermissionRationale()` for the educational UI, then
+`registerForActivityResult(ActivityResultContracts.RequestPermission())` to launch — rather than a
+hand-rolled equivalent:
+<https://developer.android.com/training/permissions/requesting> (rationale:
+<https://developer.android.com/training/permissions/requesting#explain>).
+
+### The degradation contract
+
+**For an ENHANCING permission, denial must produce all four of these.** Three out of four is a
+defect:
+
+1. **The surrounding workflow still completes.** A log entry with no position still saves. If the
+   save button stops working because location was denied, the classification was wrong or the
+   implementation is.
+2. **A visible, honest statement of what is missing and why** — *"no position (location denied)"*,
+   not a blank field, not a zero, and not a plausible-looking default. A blank field is a value
+   computed from nothing wearing a disguise.
+3. **An inline control that re-triggers the prompt right there.** Recovering must never require the
+   user to find Settings on their own.
+4. **Never a hidden control, never a disabled control with no explanation, never a control that does
+   nothing.** This is the house rule about silent no-ops (`SKILL.md`), and a permission denial is
+   the single most common way an app grows one — the control is right there, it looks live, and
+   tapping it does nothing because the permission behind it is gone.
+
+**For an ESSENTIAL permission, "fail closed" does not license a dead end.** Failing closed means not
+proceeding without the capability; it does not mean a blank screen. Denial produces a screen that
+states what the app cannot do, why the permission is unavoidable (in the app's terms, not the API's),
+a button to grant it, and **a route to whatever the app can still do, if anything** — a settings
+screen, an export, an offline view. "Nothing, and here is why" is an acceptable answer only after
+you have looked for something.
+
+### Permanent denial is real, and most designs ignore it
+
+**Two denials is permanent.** After the user taps Deny twice over the app's installed lifetime,
+the system dialog never appears again — the platform treats it as "don't ask again"
+(<https://developer.android.com/training/permissions/requesting#handle-denial>).
+
+This breaks the naive version of contract item 3: an inline "try again" that calls `launch()` after
+a permanent denial **does nothing at all** — the exact dead control the rule forbids, introduced by
+the code meant to satisfy it.
+
+So the inline control must branch:
+
+- permission grantable → launch the system prompt;
+- permanently denied → deep-link to the app's settings page, and say that is where it now lives.
+
+`shouldShowRequestPermissionRationale()` returning `false` on a not-yet-granted permission is the
+signal that the prompt is spent. Test both states — see the flags below.
+
+### Standing checklist
+
+Every restricted capability, every audit:
+
+- [ ] Classified **essential** or **enhancing**, with the reasoning recorded in the spec.
+- [ ] Manifest declaration **and** a runtime request **and** a re-check immediately before the gated
+      action fires.
+- [ ] The four-part degradation contract holds for every enhancing permission.
+- [ ] The inline retry branches on permanent denial rather than calling `launch()` blindly.
+- [ ] An essential denial lands on an explaining screen with a way forward, not a dead end.
+- [ ] A deny-everything run exists as a test scenario (`testing-and-bugs.md`).
+
+Two traps that make a denial test pass for the wrong reason:
+
+- **Journeys may auto-grant every permission.** If the suite uses Journeys (`ecosystem.md` §3),
+  denial scenarios can go green without ever exercising the denial path — precisely where this bug
+  class lives. Keep denial cases as ADB tests with explicit `pm revoke`.
+- **A once-denied permission is not a permanently-denied one, and they behave differently.** Test
+  both. The platform flags them separately, and `dumpsys` shows which state you are actually in:
+
+```bash
+adb shell pm revoke <pkg> android.permission.ACCESS_FINE_LOCATION   # denied once
+adb shell dumpsys package <pkg> | grep -A1 ACCESS_FINE_LOCATION     # USER_SET vs USER_FIXED
+adb shell pm clear-permission-flags <pkg> android.permission.ACCESS_FINE_LOCATION user-set user-fixed
+```
+
+The last line is how you get back to a virgin state between runs; `pm clear` also works and resets
+everything else with it.
+
+- **LAN discovery may need a runtime permission now.** Recent Android versions have moved
+  local-network access behind a user-granted permission. **This is unverified for current AOSP** — it
+  was observed in a vendor fork's change list and not confirmed against AOSP behaviour first-hand. If
+  the app does mDNS/NSD or any LAN discovery (`panel-remote`'s domain), **check the behaviour on the
+  actual target OS version before assuming either way**, and treat a discovery failure on a real
+  device as a possible permission problem rather than only a network one. Do not write a permission
+  request into the manifest on the strength of this paragraph.
+
 
 ## Local storage
 
