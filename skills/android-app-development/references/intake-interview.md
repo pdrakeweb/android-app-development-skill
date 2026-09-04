@@ -62,7 +62,8 @@ Then apply it to everything that follows:
 - **At Intermediate/Advanced, keep general programming vocabulary and explain the Android-specific
   terms anyway.** A strong engineer new to Android knows what a build system is and does not know
   what an AVD is — and will not ask, because asking feels like admitting ignorance in their own
-  field. This is the most commonly mishandled profile (`user-calibration.md` §4).
+  field. This profile is the easiest to misread in both directions at once — over-explaining the
+  programming and under-explaining the platform (`user-calibration.md` §4).
 - **Re-calibrate on evidence.** Self-assessment is unreliable both ways. Going quiet after a dense
   message is a stronger signal than anything they say about themselves — treat sudden agreement with
   something complicated as a comprehension failure until proven otherwise (`user-calibration.md` §5).

@@ -562,8 +562,8 @@ manual download" is fine; leading with the manual download is not.
 
 ### What actually still needs a human
 
-After package managers, the list is short — and it is shorter than earlier drafts of this skill
-claimed:
+After package managers, the list of genuinely human steps is short. It is shorter than it feels
+while you are writing an install guide, which is why the default drifts toward handing over links:
 
 - **Anything needing elevation you can't obtain.** Enabling Windows Hypervisor Platform is a
   Windows *feature*, not a package: it needs an elevated shell. Don't guess the feature name —

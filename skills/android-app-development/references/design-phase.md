@@ -123,8 +123,8 @@ spacing and type scale — that will otherwise be re-litigated at implementation
 ### Converge and name the design of record
 
 Pick one, state what it borrowed from the others, then write the decision down. **State explicitly
-which artifact wins when the mockup and the spec text disagree** — this is the single most common
-source of "the app doesn't match the design" later. Record it in the spec, and open an ADR if the
+which artifact wins when the mockup and the spec text disagree** — unresolved, that ambiguity
+resurfaces as "the app doesn't match the design" once there is code to compare against. Record it in the spec, and open an ADR if the
 choice constrains the architecture (a kiosk layout, a locked orientation, a custom control surface).
 
 Then update `DESIGN_TOKENS.md` from the winner. Mockups are throwaway; the token file is not.
