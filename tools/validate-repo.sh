@@ -9,7 +9,8 @@
 # trust. Runs locally with no arguments; CI calls the same script.
 
 set -uo pipefail
-cd "$(dirname "$0")/.."
+# A failed cd would validate the wrong tree and could report a false pass.
+cd "$(dirname "$0")/.." || { echo "cannot cd to repo root" >&2; exit 1; }
 
 SKILL_DIR="skills/android-app-development"
 FAIL=0
