@@ -87,23 +87,20 @@ with an explicit confidence level — which is the right shape for a recommendat
 audit themselves. It is **optional**: without it, the same rigour happens inline with web search,
 just with fewer agents.
 
-**Installing it** — clone [`pdrakeweb/council-skill`](https://github.com/pdrakeweb/council-skill),
-build the package, and upload it:
+**Installing it:**
 
-```bash
-git clone https://github.com/pdrakeweb/council-skill
-cd council-skill
-./build.sh --zip          # Windows: .\build.ps1
+```
+/plugin marketplace add pdrakeweb/council-skill
+/plugin install council@pdrakeweb-council
 ```
 
-Then **Settings → Capabilities → Skills → Upload a skill** and pick the resulting `council.zip`. On
-Windows, `.\deploy.ps1 -RestartClaude` installs it into Claude Desktop directly.
+Or build and upload it — clone [`pdrakeweb/council-skill`](https://github.com/pdrakeweb/council-skill),
+run `./build.sh --zip` (Windows: `.\build.ps1 -Zip`), then **Settings → Capabilities → Skills →
+Upload a skill**.
 
-> Two caveats, both accurate as of this writing. The council repository is **private**, so the links
-> above will 404 unless you have access. And unlike this repo, it ships no `.claude-plugin/`
-> manifest, so there is no `/plugin marketplace add` path for it yet — build-and-upload is the
-> install route. Neither is a blocker: **the skill degrades cleanly**, doing the same research
-> inline with web search when `council` isn't present.
+> `/plugin marketplace add` requires the council repository to be public. If the command doesn't
+> resolve yet, build-and-upload works regardless — and so does doing nothing: **the skill degrades
+> cleanly**, running the same research inline with web search when `council` isn't installed.
 
 ### About the hooks
 
