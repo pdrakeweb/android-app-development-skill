@@ -51,8 +51,11 @@ worked, in this order:
 5. **Screens, or surfaces** — one section each: what it shows, what it reads, what rules it must
    honour. Include what each shows **with no data yet**.
 6. **Background work** — what runs when the UI isn't up, what schedules it, what it must never do.
-7. **Data and permissions** — what's stored, where, backup eligibility, every restricted capability
-   and its denied-state behaviour.
+7. **Data and permissions** — what's stored, where, and backup eligibility, plus a **permission
+   table** with one row per restricted capability and these columns: the permission, **Essential or
+   Enhancing**, *why it is classified that way*, what the app does when it is denied, and where it is
+   requested (first-run flow or in context). The reasoning column is the one that stops the
+   classification being re-litigated at the first denial bug (`permissions-storage-cloud.md`).
 8. **What this app must never do** — the verbatim list from the interview.
 9. **Needs a decision, not a guess** — every open question, unresolved, attributed to the user.
 10. **Answered, so nobody re-opens it** — decisions already made, with their reasons.
@@ -236,6 +239,7 @@ Coverage worth having in every project, from the corpus's suite:
 | Each feature surface | One file per screen or subsystem |
 | Lifecycle | Rotation, background/resume, back stack, cold start, process death |
 | Failure and resilience | Every way the app's dependencies can fail — refused, hung, starved, vanished — and what the user sees for each |
+| Permission denial | A **deny-everything** run: revoke every permission, cold-start, and drive the main flow. Each enhancing denial leaves the workflow completing with a visible reason and a working inline retry; each essential denial explains itself and offers a way forward. Also run the *permanently* denied state, where the system prompt no longer appears |
 | Empty and first-run state | The no-data screens say so rather than rendering a number computed from nothing. Worth a **screenshot test** (`testing-and-bugs.md` §3b) — this invariant is visual, and a golden image checks it directly |
 | Soak | Repeat the flap/recover cycle N times; compare fd/thread/memory before and after |
 | Platform behaviour at `targetSdk` 36 | Insets handled with edge-to-edge forced on; predictive back leaves no orphaned `onBackPressed()` guard; a portrait-locked layout survives a landscape tablet window (`platform-currency.md` §4) |
