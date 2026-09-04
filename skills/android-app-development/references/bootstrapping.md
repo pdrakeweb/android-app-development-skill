@@ -7,7 +7,7 @@
 
 ## Before anything: pin the toolchain
 
-**Read `platform-currency.md` §1 and run `scripts/preflight.sh` before you scaffold.** A cold
+**Read `platform-currency.md` §1 and run `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` before you scaffold.** A cold
 session working from training data will produce an AGP 8-era project that does not build under the
 current toolchain, and the errors do not name the real cause. This is the cheapest failure in the
 whole process to avoid and the most expensive to debug after the fact.

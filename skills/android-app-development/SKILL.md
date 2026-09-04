@@ -1,8 +1,10 @@
 ---
 name: android-app-development
 version: 0.2.0
-description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync.
-allowed-tools: Read, Write, Edit, MultiEdit, Glob, Grep, Bash, WebFetch, WebSearch, Task, Agent, AskUserQuestion, TodoWrite
+description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
+license: Apache-2.0
+compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preflight.sh *), Bash(${CLAUDE_SKILL_DIR}/scripts/verify-install.sh *), Bash(${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh *)
 ---
 
 # Android App Development (Claude Code)
@@ -95,7 +97,7 @@ These showed up often enough, across independent projects, that they're clearly 
 - **A button, action, or field that does nothing with no explanation is treated as the worst failure mode**, worse than an error message. Every "why didn't this work" bug report in the corpus traces back to a silent no-op somewhere. Default to failing loudly.
 - **Fail closed, and never weaken a guard to make something compile.** Every guard in the corpus exists because the alternative failed *open* and silently. When a value can't be computed, say so — never return the safe-looking one.
 - **A value computed from nothing is never displayed as a finding.** Empty states say they're empty. An empty first install is the cheapest possible test of this, and it has caught fabricated numbers twice.
-- **Every implementation pass ends with a real build and a real test**, not "should work now." "After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature" is a recurring, explicit instruction — say it every time rather than assuming it's implied. `scripts/verify-install.sh` makes the check deterministic instead of a claim.
+- **Every implementation pass ends with a real build and a real test**, not "should work now." "After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature" is a recurring, explicit instruction — say it every time rather than assuming it's implied. `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` makes the check deterministic instead of a claim.
 - **When a fix needs a judgement rather than a correction, stop and ask.** Several numbers in these codebases look like implementation details and are actually domain judgements; guessing produces a plausible-looking app that is wrong in a way nobody notices for months.
 - **Every silent failure that gets fixed gets a regression test.** A silent failure that regresses is invisible again.
 - **Match the register to the person, and establish it before anything else.** Ask the audience-level question first (`user-calibration.md`), then tune every question, explanation and error message to the answer. At novice levels *ask fewer questions and decide more*, stating plainly what you picked — asking someone to choose a navigation library when they cannot evaluate the options is abdication, not consultation. Going quiet after a dense message is the clearest comprehension signal there is; treat sudden agreement with something complicated as a failure to land until proven otherwise.
@@ -109,6 +111,6 @@ Prose instructions get skipped on turn forty. These do not — run them instead 
 
 | Script | Answers |
 |---|---|
-| `scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
-| `scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? |
-| `scripts/verify-artifact.sh` | Does the release artifact carry the right ABIs, targetSdk, and a v2+ signature? |
+| `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release artifact carry the right ABIs, targetSdk, and a v2+ signature? |

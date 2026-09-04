@@ -49,7 +49,7 @@ reading logs — is yours to run.
 
 **How much to narrate depends on who you're talking to** (`user-calibration.md` §8 and §12): at
 novice levels explain each install before running it and take the four human steps one at a time;
-at professional level, point at this file and `scripts/preflight.sh` and ask what already exists.
+at professional level, point at this file and `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` and ask what already exists.
 
 Two things to say out loud at any level, because both cost real time and neither is the user's
 fault:
@@ -200,7 +200,7 @@ EMU="$SDK/emulator/emulator.exe"
 Known-good baseline on the machine this was written from: adb 1.0.41, emulator 36.5.11.0,
 JDK 17.0.19. **Gradle and AGP are not pinned here** — they belong to the project's version catalog,
 and the current values live in `platform-currency.md` §1 (as of 2026-09-04: AGP 9.4.0 on Gradle
-9.6.0). `scripts/preflight.sh` checks this machine against them.
+9.6.0). `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` checks this machine against them.
 
 ---
 

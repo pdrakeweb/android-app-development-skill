@@ -104,7 +104,7 @@ worth keeping:
 - **runtime-permission grant/deny states**, because a Journey may auto-grant all app permissions, which silently defeats exactly the test you were writing (see the caveat in `ecosystem.md` §3). Keep these as ADB tests, where `pm revoke` / `pm clear` puts grant state under your control.
 - fault injection against an external peer — refuse, hang, starve, disappear;
 - LAN rig work, and anything needing a real device on real Wi-Fi (§7 of the toolchain reference);
-- ARM-target verification and artifact-shape checks — `scripts/verify-artifact.sh`;
+- ARM-target verification and artifact-shape checks — `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`;
 - toolchain and build-config guards;
 - soak tests comparing fd/thread/memory before and after.
 
@@ -124,7 +124,7 @@ For a device-testing pass that needs to be reproducible by someone else (or by a
 Practical notes pulled from a working test plan:
 - Export the tool paths once at the top of the harness (`ADB=...`, `APK=...`, `PKG=...`) so every step is copy-pasteable without re-deriving paths.
 - Distinguish "FAIL" from "BLOCKED" (e.g. a step needing hardware that isn't present) — don't let environment gaps masquerade as app defects.
-- A no-crash check is its own explicit test, not an assumption: `adb logcat -d -v time | grep -iE 'AndroidRuntime|FATAL EXCEPTION|beginning of crash'` should print nothing, and `adb shell pidof <pkg>` should print a PID. **`scripts/verify-install.sh` does all of this** — install asserting on `Success`, clear the crash buffer *before* launching so a previous run's crash can't be misread as this one's, launch, confirm a live PID, check the foreground activity, and assert the crash buffer is empty. Prefer running it to re-deriving the sequence by hand.
+- A no-crash check is its own explicit test, not an assumption: `adb logcat -d -v time | grep -iE 'AndroidRuntime|FATAL EXCEPTION|beginning of crash'` should print nothing, and `adb shell pidof <pkg>` should print a PID. **`${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` does all of this** — install asserting on `Success`, clear the crash buffer *before* launching so a previous run's crash can't be misread as this one's, launch, confirm a live PID, check the foreground activity, and assert the crash buffer is empty. Prefer running it to re-deriving the sequence by hand.
 - **Deriving tap coordinates from a UI dump is the most fragile part of this harness.** Before writing one, consider `android layout` / `android screen resolve` from the Android CLI, or an MCP device-control server — `ecosystem.md` §4 ranks the options.
 - For emulator work broadly, the recurring instruction is simply: *"Use the android simulator that we've used for our other android apps to run the apk"* — i.e., standardize on one emulator/AVD across projects rather than reconfiguring per-app, and *"After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature and function"* as the closing step of every implementation pass.
 
