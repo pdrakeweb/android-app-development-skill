@@ -163,6 +163,12 @@ This single answer decides:
 - **whether live credentials may be baked into the build.** Personal, non-distributed builds may do
   this deliberately — but a GitHub releases page *is* a distribution channel, informally or not.
   See the boundary in `permissions-storage-cloud.md`.
+- **which distribution identity is needed.** Developer verification is rolling out (first countries
+  2026-09-30, global through 2027). ADB sideloading to your own device is unaffected; a **limited
+  distribution account** covers "a handful of named people" with no government ID, no fee, and up
+  to 20 devices; Play means the `targetSdk` policy deadlines bind from day one. For "a handful of
+  named people", **offer the limited distribution account as the default** rather than a GitHub
+  releases page — it is the instrument built for that answer. See `platform-currency.md` §6.
 - **signing**: whether a real keystore is needed now, and (if there's a watch or a companion) that
   both modules must use the *same* key or the pairing silently fails.
 - **whether release/R8 builds are on the critical path from day one.** They are for anything going
@@ -179,7 +185,8 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 |---|---|
 | **Watch in scope** | Which Wear OS versions does the target watch *actually run* today? Tiles or complications? What shows when unpaired? Is the watch a sensor source or the primary UI? Battery expectations for continuous sensing? |
 | **Background operator** | What wakes it (schedule, sensor, push, boot)? Foreground-service type? What must survive Doze and reboot? What's the user-visible evidence it's running — and what does it show when it has silently stopped? |
-| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? |
+| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? **If a tablet is in scope, "orientation locked" is not achievable via the manifest** — at `targetSdk` 36 those restrictions are ignored on screens ≥600dp, so a portrait-locked design gets a landscape window anyway (`platform-currency.md` §4). Decide the adaptive layout now, not after the first tablet screenshot |
+| **Native code or a vendor SDK** | Which ABIs ship? 16 KB page support (required for native `.so`)? On Wear OS, both 32- and 64-bit are required by Play since 2026-09-15. An x86_64 emulator pass is not evidence for an `arm64` target |
 | **AI/LLM** | Routing rules between models? What's never sent? Streaming or batch? What does a refusal, a timeout, and a truncated response each look like on screen? Cost ceiling? |
 | **On-device model** | How big is the download, and over what network? Where is it cached, and is integrity verified? What does the app do while it downloads, and if it fails halfway? |
 | **Sensitive data** | Encryption at rest? Passphrase — user-supplied or derived? What's the recovery story if it's forgotten? Who else physically handles the device? Is a demo/fixture dataset needed for testing — and is fabricating data about a real person acceptable here? (In the corpus, it was not.) |

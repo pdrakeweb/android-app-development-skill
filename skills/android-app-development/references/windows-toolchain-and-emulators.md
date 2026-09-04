@@ -9,6 +9,40 @@ Paths below use Git Bash (`/c/...`). In PowerShell the same paths are `C:\...`. 
 (`adb.exe`, `emulator.exe`, `aapt2.exe`, `gh.exe`) never understand an MSYS-style `/c/...` path —
 see §6.
 
+**Contents:** [§0 Android CLI first](#0--try-android-cli-first) · [§1 Install](#1--install-the-toolchain) ·
+[§2 Project setup](#2--project-level-setup) · [§3 AVDs](#3--avds-for-phone-tablet-and-wear-os) ·
+[§4 Boot/install/launch](#4--booting-installing-and-launching) · [§5 Verify](#5--verify-its-actually-running) ·
+[§6 Windows path traps](#6--windows-specific-path-and-shell-gotchas) ·
+[§7 Emulator networking limits](#7--emulator-networking-limitations-know-these-before-you-debug-the-wrong-thing) ·
+[§8 Shutdown](#8--shutting-down) · [§9 Scope](#9--scope-of-this-document)
+
+---
+
+## 0 · Try Android CLI first
+
+Most of §1 is now automatable. Google's **Android CLI** installs the SDK component-by-component,
+scaffolds projects, deploys, and manages AVDs — see `ecosystem.md` §1.
+
+```bash
+android sdk install
+android create
+android run
+```
+
+**On Windows there is a verified, load-bearing exception: `android emulator` is disabled, and
+downloading the CLI from PowerShell is not supported.** So on Windows the split is:
+
+| Job | Use |
+|---|---|
+| SDK install, scaffolding, deploy, docs, skills | **Android CLI** (§0) |
+| **Creating and booting AVDs** | **The manual path below** (§3–§4) |
+
+On macOS and Linux, `android emulator` covers the AVD half too and §3 becomes a fallback.
+
+**Everything below therefore remains current on Windows.** It is not legacy — it is the supported
+path for the emulator half of the job, and the §6–§7 gotchas apply no matter which tool created
+the AVD.
+
 ---
 
 ## 1 · Install the toolchain
@@ -74,7 +108,7 @@ yes | "$SDKM" \
 and `apksigner` (verify signatures). Bump `android-36` / `36.0.0` to whatever `compileSdk` the
 project actually declares — check `gradle/libs.versions.toml` first rather than assuming.
 
-### 1.5 Hardware acceleration
+### 1.5 Hardware acceleration — use WHPX
 
 ```bash
 "$SDK/emulator/emulator.exe" -accel-check
@@ -83,6 +117,14 @@ project actually declares — check `gradle/libs.versions.toml` first rather tha
 If it fails, enable **Windows Hypervisor Platform** in *Turn Windows features on or off*, then
 reboot. Without it the emulator is not "a bit sluggish" — it is unusably slow, to the point of
 looking hung.
+
+**WHPX is the right answer, and the only one with a future.** Two dead ends to avoid:
+
+- **HAXM is deprecated** (Intel discontinued it). From emulator **36.2.x.x** the emulator no longer
+  uses it at all.
+- **AEHD — the Android Emulator hypervisor driver — is sunset on 2026-12-31.** It still works until
+  then. Do not install it on a new machine; you would be adopting something with a published expiry
+  date. If an older setup guide tells you to install AEHD, that guide is stale.
 
 ### 1.6 GitHub CLI — only if you'll publish releases
 
@@ -103,7 +145,10 @@ AVDM="$SDK/cmdline-tools/latest/bin/avdmanager.bat"
 EMU="$SDK/emulator/emulator.exe"
 ```
 
-Known-good baseline on this machine: adb 1.0.41, emulator 36.5.11.0, JDK 17.0.19, Gradle 8.14.3.
+Known-good baseline on the machine this was written from: adb 1.0.41, emulator 36.5.11.0,
+JDK 17.0.19. **Gradle and AGP are not pinned here** — they belong to the project's version catalog,
+and the current values live in `platform-currency.md` §1 (as of 2026-09-04: AGP 9.4.0 on Gradle
+9.6.0). `scripts/preflight.sh` checks this machine against them.
 
 ---
 

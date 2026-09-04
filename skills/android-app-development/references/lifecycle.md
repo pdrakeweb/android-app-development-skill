@@ -33,8 +33,11 @@ worked, in this order:
 
 1. **What this is, and what it is not.** Lead with the "not". One paragraph.
 2. **Compatibility targets** — a table, with a hard split between *supported* and *actually tested*.
-   `minSdk` / `targetSdk` / `compileSdk` / JDK / Gradle, and where each is declared (a version
-   catalog, so nothing can drift). Name the real target hardware and the shipping ABI.
+   `minSdk` / `targetSdk` / `compileSdk` / JDK / Gradle / AGP, and where each is declared (a version
+   catalog, so nothing can drift). Name the real target hardware and the shipping ABI. **Take the
+   values from `platform-currency.md` §1 and record the date you verified them**, rather than from
+   memory — and if the distribution answer (Q10) is Play, note that `targetSdk` 36 is a *policy*
+   constraint with a date attached, not a preference (§5 there).
 3. **The constraints that override everything** — numbered, two or three at most. These are the ones
    that make a later feature request a spec violation rather than a debate.
 4. **The named safety/correctness invariant** (interview Q9), phrased so it can be pasted verbatim
@@ -95,9 +98,14 @@ single most valuable gate in the process — it is much cheaper to reorder a pla
 A normal build-review-fix loop, with three rules that come straight from what worked:
 
 - **Every pass ends with a real build and a real run on an emulator** — not "should work now".
-  State it explicitly each time rather than assuming it's implied. See
-  `windows-toolchain-and-emulators.md` for the emulator mechanics and
+  State it explicitly each time rather than assuming it's implied. **Run
+  `scripts/verify-install.sh <apk> <package>`**, which asserts on `Success`, launches, confirms a
+  live PID and the foreground activity, and checks the crash buffer — turning "I tested it" from a
+  claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
   `bootstrapping.md` for the architecture defaults.
+- **Run `scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
+  produces configuration-time errors that never name the real cause, and an AGP 8-era scaffold does
+  not build at all under AGP 9 (`platform-currency.md` §3).
 - **A first compile of a never-compiled module is its own step**, and its output is worth reading
   carefully: work errors in the order reported, smallest edit first, re-running after each rather
   than batching. Distinguish a **typo** from a **design error** — the corpus's best worked example
@@ -113,11 +121,33 @@ A doc updated at the end of the session is a doc written from memory.
 
 ---
 
-## Phase 4 · Test scenarios in `tests/`
+## Phase 4 · Test scenarios
 
-Written as Markdown an **agent** can execute against an emulator, not as prose a human has to
+Written so an **agent** can execute them against an emulator, not as prose a human has to
 interpret. This is the artifact that turns "I clicked around and it seemed fine" into an objective
 pass/fail, and it's what makes a regression detectable months later.
+
+### Pick the format first
+
+**Default to Journeys (`src/journeysTest/*.journey.xml`) for feature-behaviour scenarios.** Same
+idea as the Markdown format below, but machine-parseable, reportable as ordinary JUnit/Gradle
+tests, and runnable both in Android Studio and locally against your own agent via
+`fornewid/journeys-test`. Wiring in `ecosystem.md` §3.
+
+**Keep the Markdown ADB format for what Journeys cannot express** — and check this list before
+assuming a scenario fits:
+
+| Keep as an ADB test | Because |
+|---|---|
+| Runtime permission grant/deny | A Journey may auto-grant every permission, so the denial path is never exercised and the test passes for the wrong reason |
+| Fault injection against a peer | Needs a scriptable way to make the peer refuse/hang/starve/vanish |
+| LAN / discovery / real-rig work | The emulator cannot do multicast or unsolicited inbound UDP at all |
+| ARM verification, artifact shape | `scripts/verify-artifact.sh`, not a UI flow |
+| Toolchain and build-config guards | Not a device behaviour |
+| Soak (fd/thread/memory before-after) | Needs process-level measurement |
+
+Both formats feed the same gate. Whichever you use, the harness conventions below still apply —
+they are about *rigs and evidence*, not about file format.
 
 ### `tests/README.md` — the shared harness
 
@@ -165,8 +195,9 @@ Coverage worth having in every project, from the corpus's suite:
 | Each feature surface | One file per screen or subsystem |
 | Lifecycle | Rotation, background/resume, back stack, cold start, process death |
 | Failure and resilience | Every way the app's dependencies can fail — refused, hung, starved, vanished — and what the user sees for each |
-| Empty and first-run state | The no-data screens say so rather than rendering a number computed from nothing |
+| Empty and first-run state | The no-data screens say so rather than rendering a number computed from nothing. Worth a **screenshot test** (`testing-and-bugs.md` §3b) — this invariant is visual, and a golden image checks it directly |
 | Soak | Repeat the flap/recover cycle N times; compare fd/thread/memory before and after |
+| Platform behaviour at `targetSdk` 36 | Insets handled with edge-to-edge forced on; predictive back leaves no orphaned `onBackPressed()` guard; a portrait-locked layout survives a landscape tablet window (`platform-currency.md` §4) |
 
 **Fault injection is worth building** when the app depends on something external. A scriptable way
 to make the peer fail on demand (refuse, hang, starve, disappear) is what turns resilience from an
@@ -183,7 +214,11 @@ BLOCKED/FAIL.
 Full detail in `testing-and-bugs.md`; the shape is:
 
 1. **Adversarial audit** against the named defect classes, with a mandated output format, and the
-   safety invariant restated verbatim. Not "review this code."
+   safety invariant restated verbatim. Not "review this code." **Cite an official page per
+   finding**, and where the app holds sensitive data, use **MASVS control IDs** as the finding
+   vocabulary so a name means the same thing in every session (`testing-and-bugs.md` §1b).
+   Google's `r8-analyzer`, `android-profiler` and `android-intent-security` skills cover release
+   quality, performance and the intent surface — areas with no equivalent here (`ecosystem.md` §2).
 2. **Partition the findings by file**, dispatch one scoped fix-agent per partition, each with a hard
    allowlist and an explicit "another agent owns X" (see `subagent-delegation.md`).
 3. **Integration build**, then **re-run the Phase 4 suite** — not a spot check.
@@ -198,16 +233,33 @@ with a reason.
 
 ## Phase 6 · Beta release
 
+- **Decide the distribution identity before building.** Intake Q10's answer now also determines
+  whether **developer verification** applies (`platform-currency.md` §6). ADB sideloading to your
+  own device is unaffected; a **limited distribution account** — no ID, no fee, up to 20 devices —
+  covers "a handful of named people"; Play means the `targetSdk` policy deadlines bind. Write down
+  which one this is, so a later session neither panics into registering an account it doesn't need
+  nor ships into a channel it hasn't qualified for.
 - **Ship the release build, never the debug one** — especially to a watch. In this corpus a debug
   watch APK (33 MB of dex across 16 files) would not install on real hardware; minified it was 2.8 MB
   in one dex. Do not let a plausible wrong theory (architecture, ABI) eat an afternoon: check the
-  artifact directly with `aapt2 dump badging`.
+  artifact directly. **`scripts/verify-artifact.sh <apk> --release` does this in one command** —
+  ABIs, `targetSdk`, signature scheme, dex count, and whether the build is still debuggable.
 - **Verify the signature**, and that a v2 signature is present — v1-only fails to install on modern
   API levels. If there's a companion (watch, second app), **both must use the same key**, or they
-  install fine, run fine, and can't talk to each other with nothing on screen to say why.
+  install fine, run fine, and can't talk to each other with nothing on screen to say why. The
+  script prints the certificate SHA-256 for exactly this comparison.
+- **Wear OS, if in scope:** 64-bit is required by Play since 2026-09-15 for anything shipping native
+  code (both 32- and 64-bit, not a replacement), and Watch Face Format is required for watch faces.
+  `targetSdk` floor is 35, not 36 (`platform-currency.md` §7).
 - **Keep-rule discipline for R8.** Anything reflective or serialized needs keep rules, and a
   stripped serializer is a classic silent failure — it surfaces as a wrong user-facing message about
   a file that is perfectly intact. Re-run the round-trip test after any keep-rule change.
+- **Automate the upload if this goes to Play more than once.** **Gradle Play Publisher** builds,
+  uploads and promotes bundles and listings with `track`, `releaseStatus`, `userFraction` and
+  `updatePriority` config. **Pin the right major: GPP 3.13.0 for AGP 7–8, 4.x for AGP 9+** — with
+  the pins in `platform-currency.md` that means 4.x. `fastlane supply` is the established
+  alternative. (`gplay`, a newer Go CLI positioned for agentic flows, is unproven — don't put a
+  release path on it yet.) Google's `play` skill covers the submission mechanics.
 - **Publish, then document the diagnostics.** The recurring closing instruction in the corpus is:
   *implement the recommendations, publish a beta, push all the code, and make sure the debug
   commands are documented in the docs folder before pushing everything up.* The `adb` commands used
