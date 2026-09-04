@@ -1,0 +1,75 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.2.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+
+      # Never publish something that would not pass review.
+      - name: Validate
+        run: bash tools/validate-repo.sh
+
+      - name: Build
+        id: build
+        run: |
+          set -euo pipefail
+          ./build.sh
+          v=$(sed -n 's/^version:[[:space:]]*"\{0,1\}\([0-9.]*\)"\{0,1\}.*$/\1/p' \
+                skills/android-app-development/SKILL.md | head -1)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      # A tag that disagrees with the frontmatter version would publish an
+      # artifact whose name and contents contradict its own release.
+      - name: Check the tag matches the skill version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF#refs/tags/v}"
+          if [ "$tag" != "${{ steps.build.outputs.version }}" ]; then
+            echo "Tag v$tag does not match SKILL.md version ${{ steps.build.outputs.version }}" >&2
+            exit 1
+          fi
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          VERSION: ${{ steps.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          notes=$(cat <<'NOTES'
+          Install as a Claude Code plugin:
+
+          ```
+          /plugin marketplace add pdrakeweb/android-app-development-skill
+          /plugin install android-app-development@pdrakeweb-android
+          ```
+
+          Or download `android-app-development.zip` below and upload it via
+          **Settings → Capabilities → Skills → Upload a skill**.
+          NOTES
+          )
+          gh release create "$TAG" android-app-development.zip \
+            --title "android-app-development v$VERSION" \
+            --notes "$notes" || \
+          gh release upload "$TAG" android-app-development.zip --clobber
