@@ -111,8 +111,12 @@ try {
     Info "Skill: $($meta.Name)"
 
     Step "Building"
+    # A PowerShell script that returns normally leaves $LASTEXITCODE untouched, which
+    # under StrictMode throws if nothing has set it yet. Seed it, then read it back.
+    $global:LASTEXITCODE = 0
     & (Join-Path $root 'build.ps1')
-    if ($LASTEXITCODE) { throw "build.ps1 failed ($LASTEXITCODE)" }
+    $rc = $global:LASTEXITCODE
+    if ($rc -and $rc -ne 0) { throw "build.ps1 failed ($rc)" }
 
     $zip = Join-Path $root "$($meta.Name).zip"
     if (-not (Test-Path $zip)) { throw "$zip not found after build." }
