@@ -64,12 +64,20 @@ This is the path that gets you the `scripts/` and the guardrail hooks as well as
 [latest release](../../releases/latest), then go to **Settings → Capabilities → Skills → Upload a
 skill**.
 
-**From source, on Windows:**
+**From source:**
+
+```bash
+./build.sh                       # macOS / Linux / Git Bash
+```
 
 ```powershell
-.\build.ps1                      # produces android-app-development.zip
+.\build.ps1                      # Windows
 .\deploy.ps1 -RestartClaude      # installs into Claude Desktop and restarts it
 ```
+
+Both produce the same payload and run the same validations — name rules, description length, and
+version agreement between `SKILL.md` and `plugin.json`. `build.sh` is what CI runs, so those checks
+are enforced on every push rather than only when someone happens to build on Windows.
 
 `deploy.ps1` registers the skill in Claude Desktop's `manifest.json`. That step matters: Claude
 Desktop only loads skills listed there, so copying the files alone leaves the skill invisible.
@@ -144,6 +152,18 @@ private projects. The lessons and failure modes are real; the names and identify
 
 Techniques for circumventing another vendor's licensing, DRM, or device pairing are deliberately
 excluded — see the closing section of `references/testing-and-bugs.md`.
+
+## Releasing
+
+Tag it; CI does the rest.
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The `release` workflow validates the repo, builds the package, **refuses to publish if the tag
+disagrees with the version in `SKILL.md`**, and attaches the zip to a GitHub Release. It can also
+be run manually from the Actions tab.
 
 ## Currency
 
