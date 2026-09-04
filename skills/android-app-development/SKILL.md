@@ -58,6 +58,13 @@ A cold session working from training data will scaffold a project that does not 
 | minSdk | **28** (corpus floor) |
 | Wear OS / Automotive targetSdk | **35** · TV / XR: **34** |
 
+**These two numbers are not opposites, and the naming misleads everyone.** `minSdk` is the oldest
+Android that can install the app — the compatibility dial. `targetSdk` is which Android's *behaviour
+rules* the app follows, and raising it does **not** drop older devices. `targetSdk 36` + `minSdk 28`
+is the normal configuration: it follows current rules *and* runs on a 2018 phone. Never ask a user
+for either number — ask how old a phone it must work on (`intake-interview.md` Q4) and translate
+(`platform-currency.md` §9).
+
 Three consequences that bite immediately, all detailed in `platform-currency.md`:
 
 - **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, non-final resource IDs by default, `android.enableJetifier` now a build error. Install Google's `agp-9-upgrade` skill rather than hand-writing this.

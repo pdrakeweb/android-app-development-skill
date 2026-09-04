@@ -73,17 +73,48 @@ If a watch is in scope, also ask now: **does it work standalone, or does it requ
 because "waiting for your settings from the phone" being correct-behaviour-not-a-bug has to be
 decided before the first test run, not after.
 
-### 4 · What hardware and OS floor is it actually for?
+### 4 · How old a phone does this need to work on?
 
-Named device(s) if there are any (*"a Wear OS 4 smartwatch"*, *"a 12-inch Android tablet"*, *"my
-current-generation Pixel"*), plus `minSdk` / `targetSdk`.
+**Ask it in those words. Never ask the user for `minSdk` or `targetSdk`** — those are outputs of
+this question, not inputs to it, and asking for them is how an interview stalls.
 
-The named device matters more than the SDK numbers, because it decides:
-- **which Wear OS / Android versions must actually be tested**, not just declared supported;
-- **the shipping ABI**. If it ships to ARM hardware, say so in the spec in those words — an x86_64
-  emulator is then a convenience, not a verification target, and every test needs an arch tag
-  (see `windows-toolchain-and-emulators.md` and `lifecycle.md` Phase 4);
+Offer these, and say which you'd pick:
+
+| Option | Means | Cost |
+|---|---|---|
+| **Just my own device(s)** | Whatever you actually carry | Cheapest. Modern APIs available, one device to test |
+| **Anything from the last ~5 years** | Roughly Android 12 and up | The usual default. Little extra work |
+| **Anything still in real use** | Roughly Android 9 and up | Some features need a fallback path; more testing |
+| **A specific old device I own** | Named hardware sets the floor | Whatever that device runs decides it — ask which |
+
+"You choose" is a legitimate answer: pick **anything from the last ~5 years**, say you picked it,
+and record it as your decision. `platform-currency.md` §9 maps each answer to the actual number.
+
+Then, separately: **which specific device(s) will you actually test on?** (*"a Wear OS 4
+smartwatch"*, *"a 12-inch Android tablet"*, *"my current-generation Pixel"*). The named device
+matters more than any number, because it decides:
+
+- **which Android versions must actually be tested**, not just declared supported;
+- **the shipping ABI** — the chip type the app's native code is built for. If it ships to ARM
+  hardware, say so in the spec in those words: an x86_64 emulator is then a convenience, not a
+  verification target, and every test needs an arch tag (see `windows-toolchain-and-emulators.md`
+  and `lifecycle.md` Phase 4);
 - whether a real-hardware test pass is required before "done" can be claimed. It usually is.
+
+> **The misconception worth heading off, because it is nearly universal.**
+> This becomes two numbers, and they do *not* do the same job:
+>
+> - **`minSdk` — the oldest Android that can install the app.** This is the compatibility dial, and
+>   it is the only one this question sets. Lower means more devices and more work.
+> - **`targetSdk` — which Android's *behaviour rules* the app follows.** It is **not** a floor, and
+>   raising it does **not** drop older devices. An app with `targetSdk 36` and `minSdk 28` still
+>   installs and runs on a 2018 phone.
+>
+> So "target the newest Android" and "support older Androids" are **not opposites** — a normal app
+> does both at once, and that is the expected configuration, not a compromise. `targetSdk` is also
+> barely a choice: Play requires 36 for anything published (`platform-currency.md` §5). If a user
+> says they want to "support older phones", they are talking about `minSdk`; confirm that reading
+> back to them in plain words rather than assuming either way.
 
 ### 5 · What visual style?
 

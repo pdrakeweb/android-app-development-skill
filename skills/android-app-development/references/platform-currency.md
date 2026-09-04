@@ -15,6 +15,7 @@ at all.
 - [6 · Developer verification](#6--developer-verification-and-the-personal-apk)
 - [7 · Wear OS requirements](#7--wear-os-requirements)
 - [8 · Emulator acceleration on Windows](#8--emulator-acceleration-on-windows)
+- [9 · Plain English ↔ API levels](#9--plain-english--api-levels) — translating the intake answer
 
 ---
 
@@ -184,3 +185,52 @@ default on Windows.
   Do not install it on a new machine — you would be adopting something with a known expiry date.
 
 Setup detail is in `windows-toolchain-and-emulators.md` §1.5.
+
+---
+
+## 9 · Plain English ↔ API levels
+
+Nobody outside Android development thinks in API levels, and the intake interview deliberately does
+not ask for one (`intake-interview.md` Q4). This is the translation table — the user answers in
+phones and years, you write down a number.
+
+| Android | API | Released | Roughly |
+|---|---|---|---|
+| 16 | 36 | Mar 2025 | Current — the `targetSdk` Play requires |
+| 15 | 35 | Jun 2024 | Last year's phones |
+| 14 | 34 | Jun 2023 | |
+| 13 | 33 | Jun 2022 | |
+| 12 | 31 | Aug 2021 | **"anything from the last ~5 years"** |
+| 11 | 30 | Jul 2020 | |
+| 10 | 29 | 2019–20 | |
+| 9 | 28 | Aug 2018 | **"anything still in real use"** — this corpus's floor |
+| 8.0 | 26 | Aug 2017 | Below here, expect real work |
+| 7.0 | 24 | Aug 2016 | |
+
+**Mapping the intake answers:**
+
+| They said | Set `minSdk` |
+|---|---|
+| Just my own device(s) | Whatever that device runs — ask, don't guess |
+| Anything from the last ~5 years | **31** (or 28 if it costs nothing) |
+| Anything still in real use | **28** |
+| A specific old device I own | That device's version — confirm it by name |
+
+Three things to keep straight when using this table:
+
+- **The release date is when the OS shipped, not how old the phone is.** Phones receive OS updates
+  for years, so a 2021 handset may well be running Android 14 today. A device's *current* version
+  is what matters for whether the app installs; its shipped version only bounds the worst case.
+- **`targetSdk` is not on this table by choice.** It is 36 because Play requires 36 (§5), on every
+  row. Lowering `minSdk` does not lower it, and raising it does not raise `minSdk`. See the
+  explainer in `intake-interview.md` Q4.
+- **Don't quote market-share percentages from memory.** If the decision actually hinges on how many
+  devices a floor reaches, read the current distribution numbers in Android Studio's new-project
+  dialog or the Play Console rather than inventing a figure — this is exactly the "value computed
+  from nothing" the house rules forbid.
+
+**What a lower `minSdk` actually costs**, so the tradeoff can be stated honestly rather than
+hand-waved: some newer APIs need a runtime version check and a fallback path; some Jetpack
+libraries raise their own floor over time; and every supported version below the test device is a
+version nobody has actually run the app on unless you add an emulator for it. None of that is
+prohibitive down to 28 — it is why 28 is this corpus's floor rather than something higher.
