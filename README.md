@@ -109,6 +109,22 @@ empty `catch` block, `fallbackToDestructiveMigration`. It is **advisory only**: 
 and never blocks a tool call, because a guardrail that blocks on a false positive just trains you
 to disable it. Requires `node` on `PATH`. Delete `hooks/` if you don't want it.
 
+## Validating the repo
+
+```bash
+bash tools/validate-repo.sh
+```
+
+Checks what the house rules imply: shell and hook syntax, the guardrail hook's actual behaviour
+(fires on a real pattern, stays silent on the correct form, survives malformed input), JSON
+validity of every manifest, `SKILL.md` frontmatter against Anthropic's naming and description
+rules, version drift between `SKILL.md` and `plugin.json`, and docs integrity — every referenced
+file exists, every `§N` cross-reference resolves, code fences balance, and every script the docs
+promise actually ships.
+
+CI runs the same script on every push and pull request, plus `shellcheck` and a smoke test that the
+shipped scripts fail cleanly on bad input. Nothing here is bundled into the skill package.
+
 ## Scripts
 
 Run them instead of asserting the outcome:
