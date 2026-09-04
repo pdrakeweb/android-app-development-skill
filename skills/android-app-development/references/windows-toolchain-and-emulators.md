@@ -18,6 +18,34 @@ see §6.
 
 ---
 
+## 0a · Almost none of this is the user's job
+
+**This document is written for you, not for whoever asked for the app.** Read that before pasting
+any of it at them. Only five steps genuinely need a human, because they involve a download, a system
+dialog, a reboot, or physical hardware:
+
+1. Install the Java toolkit (JDK 17) — one `winget` command, or a download and an installer.
+2. Install Git.
+3. Download the Android command-line tools zip.
+4. Turn on **Windows Hypervisor Platform** in *Turn Windows features on or off*, **then reboot**.
+5. Plug in a phone and switch on USB debugging — only if testing on real hardware.
+
+Everything else in this file — installing SDK packages, accepting licences, creating emulators,
+booting them, building, installing, launching, reading logs — is yours to run.
+
+**How much of this to expose depends on who you're talking to** (`user-calibration.md` §8): at
+novice levels, hand over those five steps one at a time as click-by-click instructions and never
+paste a command block; at professional level, point at this file and `scripts/preflight.sh` and ask
+what already exists.
+
+Two things to say out loud at any level, because both cost real time and neither is the user's
+fault:
+
+- **The reboot in step 4 is not optional.** Without it the emulator is not merely slow — it looks
+  hung, and it looks like a broken install.
+- **On Windows, `android emulator` does not work** (§0). That is a limitation of Google's tool, not
+  something they did wrong. Say so, or a beginner will assume they broke it.
+
 ## 0 · Try Android CLI first
 
 Most of §1 is now automatable. Google's **Android CLI** installs the SDK component-by-component,

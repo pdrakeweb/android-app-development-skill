@@ -10,9 +10,13 @@ down, a permission that was never requested at runtime, a watch build that would
 
 ## How to run it
 
+- **Ask Q0 first, alone.** Everything else is worded based on its answer (`user-calibration.md`).
 - **Ask in batches of 2–4, not one at a time.** Use the question tool with concrete options plus a
   recommended default, so the answer can be a click rather than an essay. A ten-question
   interrogation delivered one message at a time is how an intake gets abandoned halfway.
+- **Never use a term from the glossary without translating it** (`user-calibration.md` §7) unless
+  Q0 said the person already speaks Android. Every question below is written at roughly
+  Intermediate; re-word up or down from there rather than reading it out verbatim.
 - **Broad to narrow.** The first four questions decide which of the later ones are even relevant.
   Never ask a question whose answer is already implied by an earlier one.
 - **Always offer a default and say what you'd pick.** "You choose" must be a legitimate answer to
@@ -32,9 +36,42 @@ down, a permission that was never requested at runtime, a watch build that would
 
 ---
 
+## Question 0 · Who am I talking to?
+
+**Ask this before Q1, on its own.** It decides how every question below gets worded, how much you
+explain, how much you decide rather than ask, and how much of the toolchain setup you hand over.
+Full detail — the five levels, the calibration table, the plain-language glossary — is in
+`user-calibration.md`.
+
+> Before we start — how much software or Android experience do you have? I'll match how much I
+> explain to your answer and pick sensible defaults for anything you'd rather not decide. No wrong
+> answer, and you can tell me to speed up or slow down at any point.
+
+**Novice** (never written code) · **Beginner** (some scripts or tutorials) · **Intermediate**
+(can program, new to Android) · **Advanced** (professional developer, other platforms) ·
+**Professional app developer**.
+
+Frame it as tuning, never as a test, and **default to Intermediate** if they don't answer —
+over-explaining costs one sentence to correct, while under-explaining loses someone silently.
+
+Then apply it to everything that follows:
+
+- **At Novice/Beginner, ask fewer questions, not more.** Q1, Q7, Q9 and Q10 are the ones that
+  genuinely need their judgement; decide the rest yourself and say plainly what you picked and why.
+  Asking a novice to choose a navigation library is not consultation, it's abdication.
+- **At Intermediate/Advanced, keep general programming vocabulary and explain the Android-specific
+  terms anyway.** A strong engineer new to Android knows what a build system is and does not know
+  what an AVD is — and will not ask, because asking feels like admitting ignorance in their own
+  field. This is the most commonly mishandled profile (`user-calibration.md` §4).
+- **Re-calibrate on evidence.** Self-assessment is unreliable both ways. Going quiet after a dense
+  message is the clearest signal there is — treat sudden agreement with something complicated as a
+  comprehension failure until proven otherwise (`user-calibration.md` §5).
+- **Record the level in `CLAUDE.md`** at Phase 1, with the reason, so the next session doesn't reset
+  to a different register (`user-calibration.md` §6).
+
 ## The ten core questions
 
-Ask these — or the subset that survives earlier answers — every time.
+Ask these — or the subset that survives Q0 and earlier answers — every time.
 
 ### 1 · What is this app for, and what is it deliberately *not*?
 

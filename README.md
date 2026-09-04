@@ -25,6 +25,7 @@ wins.** Install this one *alongside* them, not instead of them.
 | File | Covers |
 |---|---|
 | `SKILL.md` | Entry point: the phase table, the version pins, the reference index, the house rules |
+| `references/user-calibration.md` | Establishing the user's experience level, then tuning vocabulary, explanation depth and how much to decide for them; plain-language glossary for every term the skill uses |
 | `references/intake-interview.md` | Ten broad-to-narrow questions asked before any code, plus dynamically generated follow-ups |
 | `references/lifecycle.md` | The eight phases, each with an artifact and an exit gate |
 | `references/platform-currency.md` | Dated version pins, the AGP 9 break, API 36 behaviours that break working apps, Play deadlines, developer verification |

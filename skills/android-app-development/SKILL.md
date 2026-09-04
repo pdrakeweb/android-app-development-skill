@@ -33,7 +33,7 @@ The phases, each with an artifact and an exit gate:
 
 | Phase | Artifact | Gate |
 |---|---|---|
-| 0 · Interview | answered question set | answers played back and confirmed |
+| 0 · Interview | audience level (Q0) + answered question set | answers played back and confirmed |
 | 1 · Spec | `docs/APP_SPEC.md` (+ design tokens, ADRs, `CLAUDE.md`) | user has read and confirmed it |
 | 2 · Plan | `docs/IMPLEMENTATION_PLAN.md` | **user approves before any code** |
 | 3 · Implement | working code + updated docs | builds, installs, launches, driven by hand |
@@ -75,6 +75,7 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 
 | Situation | Reference |
 |---|---|
+| **Any conversation with a human at all** — how much to explain, which words to use, how much to decide for them | `references/user-calibration.md` |
 | Someone asked for a new app, or a rough idea needs turning into a spec | `references/intake-interview.md` |
 | Running the end-to-end process; what artifact each phase produces and what "done" means | `references/lifecycle.md` |
 | Pinning versions, checking a Play deadline, or diagnosing an AGP 9 / API 36 breakage | `references/platform-currency.md` |
@@ -97,6 +98,7 @@ These showed up often enough, across independent projects, that they're clearly 
 - **Every implementation pass ends with a real build and a real test**, not "should work now." "After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature" is a recurring, explicit instruction — say it every time rather than assuming it's implied. `scripts/verify-install.sh` makes the check deterministic instead of a claim.
 - **When a fix needs a judgement rather than a correction, stop and ask.** Several numbers in these codebases look like implementation details and are actually domain judgements; guessing produces a plausible-looking app that is wrong in a way nobody notices for months.
 - **Every silent failure that gets fixed gets a regression test.** A silent failure that regresses is invisible again.
+- **Match the register to the person, and establish it before anything else.** Ask the audience-level question first (`user-calibration.md`), then tune every question, explanation and error message to the answer. At novice levels *ask fewer questions and decide more*, stating plainly what you picked — asking someone to choose a navigation library when they cannot evaluate the options is abdication, not consultation. Going quiet after a dense message is the clearest comprehension signal there is; treat sudden agreement with something complicated as a failure to land until proven otherwise.
 - **A finding cites the page it came from.** An audit finding with a link to an official doc survives disagreement; one without gets argued about, or silently reverted by the next well-meaning agent.
 
 ## Deterministic checks

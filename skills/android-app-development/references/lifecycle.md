@@ -18,11 +18,17 @@ gets written down, not a drift.
 
 ## Phase 0 · Interview
 
-**Artifact:** answered question set (in the conversation).
-**Reference:** `intake-interview.md`.
+**Artifact:** the audience level (Q0) plus the answered question set, in the conversation.
+**Reference:** `intake-interview.md`, and `user-calibration.md` for Q0.
 **Do not start:** any scaffold, any dependency choice, any repo.
 
-**Exit gate:** the answers played back as a summary, and explicitly confirmed.
+**Ask Q0 first, on its own.** It sets how every later question is worded, how much you explain, and
+how much you decide rather than ask. At novice levels ask *fewer* questions and decide more, saying
+plainly what you picked — the questions that always need their judgement are Q1 (what it's for),
+Q7 (data sensitivity), Q9 (the invariant) and Q10 (who gets it).
+
+**Exit gate:** the answers played back as a summary — in their register, not yours — and explicitly
+confirmed.
 
 ---
 
@@ -61,6 +67,10 @@ Companion artifacts, created here when the interview called for them:
 - **`docs/adr/ADR-NNNN-*.md`** for any decision that's expensive to reverse — module boundaries,
   an on-device-vs-cloud split, a wire format, a safety rule. An ADR is cheaper than re-deriving the
   reasoning in six weeks.
+- **The audience level, recorded in `CLAUDE.md`** with the reason it was set and any later
+  adjustment. A cold session that re-derives the register gets it wrong, and swinging between a
+  plain-language session and a jargon-dense one is worse than either consistently
+  (`user-calibration.md` §6).
 - **`CLAUDE.md`** — write it now, not at the end. It is the orientation handout for every future
   session and subagent: what this is, a *"read these first"* table pointing at the other docs, the
   constraints, the module map with allowed dependency edges, the house rules, and where to ask
