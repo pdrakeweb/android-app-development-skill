@@ -1,0 +1,8 @@
+# build artifact
+*.zip
+
+# editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

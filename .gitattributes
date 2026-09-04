@@ -1,0 +1,4 @@
+# PowerShell is happiest with CRLF on Windows.
+*.ps1 text eol=crlf
+# Markdown normalises to LF in the repo.
+*.md text eol=lf
