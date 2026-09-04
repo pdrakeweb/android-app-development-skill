@@ -173,6 +173,12 @@ not survive. Then:
 | no | yes | `true` | denied once | show the rationale, then launch |
 | no | yes | `false` | spent | deep-link to app settings, and say so |
 
+The platform does keep the bit you want — AOSP's implementation ends at
+`(flags & FLAG_PERMISSION_USER_SET) != 0`, so a never-asked permission has no `USER_SET` flag and
+falls straight through to `false`, the same answer `USER_FIXED`, `POLICY_FIXED`, `SYSTEM_FIXED` and
+hard-restricted permissions all return earlier. Apps cannot read those flags without a privileged
+permission, which is why you keep your own copy.
+
 Re-check on `onResume()` after a Settings round trip — a permission granted out there produces no
 callback in your app, and a stale cached "denied" is another way to grow a dead control.
 
