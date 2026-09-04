@@ -98,9 +98,8 @@ Or build and upload it — clone [`pdrakeweb/council-skill`](https://github.com/
 run `./build.sh --zip` (Windows: `.\build.ps1 -Zip`), then **Settings → Capabilities → Skills →
 Upload a skill**.
 
-> `/plugin marketplace add` requires the council repository to be public. If the command doesn't
-> resolve yet, build-and-upload works regardless — and so does doing nothing: **the skill degrades
-> cleanly**, running the same research inline with web search when `council` isn't installed.
+It is genuinely optional: with `council` absent, the skill runs the same research inline with web
+search and reaches a recommendation the same way — just with fewer agents arguing about it.
 
 ### About the hooks
 
