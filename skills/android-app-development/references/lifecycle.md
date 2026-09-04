@@ -282,7 +282,7 @@ with a reason.
 
 ## Phase 6 · Beta release
 
-- **Decide the distribution identity before building.** Intake Q10's answer now also determines
+- **Decide the distribution identity before building.** Intake Q10's answer also determines
   whether **developer verification** applies (`platform-currency.md` §6). ADB sideloading to your
   own device is unaffected; a **limited distribution account** — no ID, no fee, up to 20 devices —
   covers "a handful of named people"; Play means the `targetSdk` policy deadlines bind. Write down
