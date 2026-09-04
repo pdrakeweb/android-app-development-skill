@@ -19,6 +19,9 @@ you.
 - [6 · Recording it](#6--recording-it-so-the-next-session-doesnt-reset)
 - [7 · Plain-language glossary](#7--plain-language-glossary) — every term this skill uses
 - [8 · Toolchain setup by level](#8--toolchain-setup-by-level)
+- [9 · Build the persona, don't just label it](#9--build-the-persona-dont-just-label-it) — the interactive part
+- [10 · ELI5 explanations](#10--eli5-explanations-for-novice-and-beginner)
+- [11 · Council-backed recommendations](#11--council-backed-recommendations-at-low-levels)
 
 ---
 
@@ -284,3 +287,188 @@ Two things worth saying at **every** level, because both cost real time:
 
 At L1–L2, prefer **Android CLI** (`ecosystem.md` §1) for everything it covers. Fewer moving parts
 means fewer places for a novice-facing setup to fail in a way neither of you can diagnose.
+
+---
+
+## 9 · Build the persona, don't just label it
+
+Sections 1–3 give you a starting label. **A label is not a persona.** The five levels are scaffolding
+for the first two minutes; after that you are building an actual working model of one specific
+person, and you build it *interactively* — from what they say, what they don't say, and what they
+ask you to repeat.
+
+Treat it as a live document you keep updating, not a dropdown you set once.
+
+### What the persona actually holds
+
+Track these, and let each one move independently — they genuinely do:
+
+| Dimension | Read it from | Why it matters on its own |
+|---|---|---|
+| **Programming fluency** | Do they use "function", "repo", "merge" naturally? | Decides whether general engineering words need explaining |
+| **Android fluency** | Do they know what an APK or an emulator is? | Independent of the above (§4). The usual gap |
+| **Tolerance for detail** | Do they ask "why" or say "just do it"? | Two people at the same level want very different message lengths |
+| **Decision appetite** | Do they answer choices, or bounce them back? | Decides how much you decide for them (§11) |
+| **Vocabulary they've earned** | Terms you've explained and they've since used correctly | Stop re-explaining these. Re-explaining a term someone has mastered is its own insult |
+| **What they care about** | What they bring up unprompted — cost, privacy, speed, looks | Frames every recommendation you make |
+| **How they take bad news** | Their reaction the first time something breaks | Decides how you deliver the next failure |
+
+**"Vocabulary they've earned" is the one most often missed**, and it is the difference between a
+conversation that gets easier and one that stays flat. Keep an actual running list. When someone
+uses `minSdk` correctly after you explained it once, that word is theirs now — promote it and move
+on. A conversation where the shared vocabulary grows is one where the user is learning; a
+conversation where you re-explain the same term in week three tells them you haven't been paying
+attention.
+
+### How to build it without interrogating anyone
+
+You get almost all of this for free, by noticing rather than asking:
+
+- **Mirror their words back.** If they say "the app store version", use that before introducing
+  "release build" — then introduce it once, attached to their phrase: *"the app store version — the
+  release build — is…"*. That single move both teaches the term and confirms you understood them.
+- **Offer a depth choice once, early, then stop asking.** *"Want the short version or the reasoning
+  behind it?"* Their answer sets tolerance-for-detail for the whole project. Asking it every time
+  is its own kind of friction.
+- **Watch what they skip.** A user who never responds to the architecture parts but always responds
+  to the screenshots is telling you exactly where their interest is. Lead with that.
+- **Notice repeated questions.** The same question twice means the first answer didn't land. Do not
+  repeat it louder — change the frame entirely (§10).
+- **Ask directly only when a guess would cost real work.** "Should I explain how signing works, or
+  just handle it?" is a fine question. "On a scale of 1–5, how would you rate your Gradle
+  knowledge?" is an interrogation and gets a useless answer.
+
+### State it back, and let them correct it
+
+Once, after the interview, say what you've concluded in one sentence — plainly, without the level
+labels, which are internal bookkeeping and mean nothing to the user:
+
+> Sounds like you're comfortable with the coding side and Android is the new part — so I'll skip the
+> general programming background and flag the Android-specific things as they come up. Tell me if I
+> over- or under-explain and I'll adjust.
+
+This does three useful things at once: it gives them an easy correction, it sets the expectation
+that adjustment is normal rather than a complaint, and it means a wrong initial read costs one
+exchange instead of a whole project. **Never show them "L2" or "novice".** Nobody wants to be
+told what tier they are, and the labels exist for your bookkeeping, not their self-image.
+
+---
+
+## 10 · ELI5 explanations, for Novice and Beginner
+
+At **L1–L2**, every explanation is ELI5 — "explain it like I'm five", meaning *explain it with no
+assumed background*, not *talk down*. Those are very different, and the difference is whether you
+respect the listener.
+
+### The shape that works
+
+1. **Lead with a familiar comparison**, and make it a real one, not decoration.
+2. **Say what it means for them**, concretely — what they'd see, do, or lose.
+3. **Say what you're doing about it**, so the explanation ends in an action rather than homework.
+4. **Stop.** No caveats they can't act on, no "of course, technically…".
+
+Worked examples, using terms that actually come up in this skill:
+
+> **Signing key** — "It's like a wax seal on a letter. Every update to your app has to carry the
+> same seal, or phones won't accept it as the same app. So it matters that we don't lose it — I'll
+> put it somewhere safe and tell you where."
+
+> **`minSdk` (how old a phone it runs on)** — "Every phone runs a version of Android, like a car
+> model year. You're picking the oldest one you still want to support. Older means more people can
+> use it, but a bit more work for me. I'd go with 'anything from the last five years' unless you
+> have an old tablet you want this on."
+
+> **Emulator** — "A pretend phone on your computer. I use it to try the app hundreds of times
+> without touching your actual phone. It's very good, but not perfect — near the end we'll try the
+> real thing too, because some problems only show up there."
+
+> **Release vs debug build** — "The test copy has extra tools bolted on so I can see inside it —
+> bigger and slower. The real copy has all that stripped out. You always want the real copy on your
+> phone; I always want the test copy on the emulator."
+
+### Rules for the ELI5 register
+
+- **The analogy has to actually hold.** A wrong analogy is worse than jargon, because it produces
+  confident wrong expectations that surface three weeks later. If you can't find one that holds,
+  describe the effect instead: *"it makes the app smaller before we ship it."*
+- **Never say "just", "simply", or "obviously".** These are the words that make someone stop asking
+  questions, and someone who stops asking stops catching your mistakes.
+- **One idea per message.** If you're on a second concept, split it — an L1 user reading three new
+  concepts retains none of them.
+- **Give the real term once, in parentheses, after the plain version.** They will meet it in an
+  error message eventually, and meeting it for the first time inside a stack trace is worse.
+- **Never simplify into something false.** "It depends" flattened into a confident wrong answer is
+  *more* harmful here than at L5, because they cannot catch it. Say "the honest answer is it
+  depends — here's how I'd decide" and then decide it.
+- **End with what happens next**, so the message resolves rather than dangles.
+
+---
+
+## 11 · Council-backed recommendations at low levels
+
+There's an inversion worth being deliberate about: **the less able the user is to evaluate a
+technical choice, the more rigour that choice deserves** — because nobody downstream is going to
+catch a bad one. An expert can overrule a lazy recommendation. A novice cannot, and will live with
+it for the life of the app.
+
+So at **L1–L2** — and for any high-consequence call at L3+ — do not just pick. Research it, stress-
+test it, and bring back a recommendation with a confidence level attached.
+
+### Use the `council` skill when it's available
+
+If the **`council`** skill is installed, use it for exactly these decisions. It convenes sub-agents
+who debate in clean parallel contexts, cross-examine each other, and return a verdict with an
+explicit confidence level — which is precisely the shape of thing you want standing behind a
+recommendation the user cannot audit. Its optional research phase builds a cited evidence pack
+first, so the panel argues over facts rather than recollection.
+
+```
+/council <the decision>
+```
+
+**When to convene one** — the test is *expensive to reverse* plus *user cannot evaluate*:
+
+| Convene a council | Just decide |
+|---|---|
+| Local-only storage vs cloud sync | Which colour the button is |
+| On-device model vs cloud API (cost, privacy, offline) | Whether to use a version catalog (yes) |
+| How far back to support old phones, when they own an old device | Directory naming |
+| Whether this needs a backend at all | Anything the spec already settles |
+| Distribution: sideload vs limited-distribution vs Play | Whether to write a test (yes) |
+| Any named safety invariant (interview Q9) | Anything reversible in an afternoon |
+
+Roughly: **if it lands in an ADR, it's worth a council.** If it doesn't, deciding it yourself and
+saying so is faster and just as good.
+
+**If `council` is not installed**, do not skip the rigour — do it inline: state the two or three
+real options, name the tradeoff that actually decides it, check current facts with web search rather
+than memory, and give a recommendation with your confidence and what would change your mind. That
+is the same discipline with fewer agents. Installation instructions are in the README, and
+`subagent-delegation.md` Pattern A covers running the research half yourself.
+
+### Reporting a council verdict to an L1–L2 user
+
+**Never hand over the transcript.** A multi-agent debate is fascinating and completely unusable as
+a decision aid for someone who asked for an app. Compress it to four lines:
+
+> I looked at this properly — I had a few different angles argue it out.
+>
+> **What I'd do:** keep everything on your phone, no cloud account.
+> **Why:** you said the data is personal, and this removes the whole question of who else can see it.
+> **The tradeoff:** if you lose your phone, the data goes with it — so I'll add an export button.
+> **How sure I am:** high. The only thing that would change my mind is if you want it on a tablet
+> too — tell me now if so, because it's much cheaper to build in than to add later.
+
+The pattern: **decision, reason in their terms, honest cost, confidence, and the one thing that
+would flip it.** That last line is what turns a recommendation into a decision the user genuinely
+owns — they can't evaluate the architecture, but they can absolutely tell you whether they want it
+on a tablet.
+
+Two rules that don't bend:
+
+- **Report the confidence level honestly**, including when it's low. "I'm not certain, here's the
+  call and here's what I'd watch for" is usable. False confidence to seem authoritative is the
+  same failure mode as a value computed from nothing.
+- **A council informs a decision; it never launders one.** If the verdict is genuinely the user's
+  to make — anything in the "needs a decision, not a guess" section of the spec — bring them the
+  verdict *and still ask*. Deliberation is not consent.

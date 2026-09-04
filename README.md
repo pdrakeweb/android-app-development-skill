@@ -74,6 +74,37 @@ skill**.
 `deploy.ps1` registers the skill in Claude Desktop's `manifest.json`. That step matters: Claude
 Desktop only loads skills listed there, so copying the files alone leaves the skill invisible.
 
+### Optional companion: the `council` skill
+
+At novice and beginner levels this skill does more than translate vocabulary — for decisions that
+are **expensive to reverse** (local-only vs cloud sync, on-device vs cloud AI, whether this needs a
+backend at all, how far back to support old phones), it researches the choice and brings back a
+recommendation rather than handing the user a menu they can't evaluate.
+
+The [`council`](https://github.com/pdrakeweb/council-skill) skill is what backs that up. It convenes
+sub-agents who debate in clean parallel contexts, cross-examine each other, and return a verdict
+with an explicit confidence level — which is the right shape for a recommendation the user cannot
+audit themselves. It is **optional**: without it, the same rigour happens inline with web search,
+just with fewer agents.
+
+**Installing it** — clone [`pdrakeweb/council-skill`](https://github.com/pdrakeweb/council-skill),
+build the package, and upload it:
+
+```bash
+git clone https://github.com/pdrakeweb/council-skill
+cd council-skill
+./build.sh --zip          # Windows: .\build.ps1
+```
+
+Then **Settings → Capabilities → Skills → Upload a skill** and pick the resulting `council.zip`. On
+Windows, `.\deploy.ps1 -RestartClaude` installs it into Claude Desktop directly.
+
+> Two caveats, both accurate as of this writing. The council repository is **private**, so the links
+> above will 404 unless you have access. And unlike this repo, it ships no `.claude-plugin/`
+> manifest, so there is no `/plugin marketplace add` path for it yet — build-and-upload is the
+> install route. Neither is a blocker: **the skill degrades cleanly**, doing the same research
+> inline with web search when `council` isn't present.
+
 ### About the hooks
 
 The plugin ships a `PostToolUse` hook that flags known silent-failure patterns — an `adb install`

@@ -68,6 +68,22 @@ Then apply it to everything that follows:
   comprehension failure until proven otherwise (`user-calibration.md` §5).
 - **Record the level in `CLAUDE.md`** at Phase 1, with the reason, so the next session doesn't reset
   to a different register (`user-calibration.md` §6).
+- **Keep building the persona after Q0 — a label is not a persona.** The level is scaffolding for
+  the first two minutes; after that you are modelling one specific person: which words they've
+  earned, how much detail they want, whether they answer choices or bounce them back, what they
+  bring up unprompted. Build it by noticing, not by interrogating — mirror their words back, offer
+  a depth choice once, and state your read back in one plain sentence so a wrong guess costs one
+  exchange instead of a project. Never show them the level label (`user-calibration.md` §9).
+- **At Novice/Beginner, every explanation is ELI5** — no assumed background, which is not the same
+  as talking down. Familiar comparison, what it means for them, what you're doing about it, stop.
+  The analogy has to actually hold; a wrong one produces confident wrong expectations that surface
+  three weeks later (`user-calibration.md` §10).
+- **Don't just pick for them — research it, then recommend.** The less able someone is to evaluate a
+  choice, the more rigour it deserves, because nobody downstream will catch a bad one. For anything
+  expensive to reverse, convene the **`council`** skill if it's installed and report the verdict as
+  decision / reason / honest cost / confidence / the one thing that would flip it. Without it, do
+  the same inline with web search. A council informs a decision; it never launders one — if the
+  call is genuinely theirs, bring the verdict *and still ask* (`user-calibration.md` §11).
 
 ## The ten core questions
 
