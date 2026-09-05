@@ -26,7 +26,7 @@ Don't ask for "a code review." Ask for an adversarial audit against a named list
 - **Security** — secrets logged or hardcoded, cleartext traffic, exported components without permission checks, WebView JS on untrusted URLs, injectable queries (FTS `MATCH` is a common blind spot).
 - **Broken functionality** — dead feature flags, race conditions on shared mutable state, infinite retry loops, silently-dropped network errors, missing null checks on backend fields that are sometimes omitted.
 - **Dead controls, especially permission-shaped ones** — a control that is hidden, disabled without explanation, or visibly live but does nothing. Denial is the most common way one appears: the control looks fine and the permission behind it is gone. Check every enhancing permission against the four-part degradation contract, and check that an inline retry branches on permanent denial rather than calling `launch()` into a prompt that will never appear (`permissions-storage-cloud.md`). A permission classified essential purely for coding convenience is itself a finding, as is any request that fires at app startup instead of from the feature that needs it.
-- **Android API misuse** — deprecated APIs, missing runtime permission requests (declaring in the manifest is not enough on API 33+), missing notification channels, `FileUriExposedException`, wrong `FLAG_ACTIVITY_*` use.
+- **Android API misuse** — deprecated APIs, missing runtime permission requests (declaring a dangerous permission in the manifest has not been enough since **API 23**), missing notification channels, `FileUriExposedException`, wrong `FLAG_ACTIVITY_*` use.
 - **Build/dependency issues** — version conflicts, missing R8/ProGuard keep rules for reflection/serialization, debug code leaking into release, wrong minSdk assumptions.
 - **Platform-currency breakage** — the API 36 behaviours in `platform-currency.md` §4, which produce defects that look like ordinary bugs: an `onBackPressed()` override that is never called (so an unsaved-work guard is silently gone), content drawing under the system bars because insets aren't handled, a portrait-locked layout handed a landscape tablet window. Treat a surviving `onBackPressed()` at `targetSdk` 36 as **High** — it is a guard that fails open and silently, which is this corpus's defining failure mode.
 
@@ -89,7 +89,8 @@ worth keeping:
   (with what remains), or left plain when open. A review where every finding still reads as open
   is one nobody can act on six weeks later, and re-auditing to find out is the expensive path.
 - **Include a "what's already done well, so it isn't 'fixed' away later" section.** This is the
-  highest-leverage part of a review document and the easiest to skip. Deliberate decisions that
+  part of a review document most often skipped, and the one that stops the same false positive
+  being re-filed every audit. Deliberate decisions that
   look like defects — a baked-in credential in a personal build, a hand-rolled parser that exists
   because the library version was wrong, manual entry kept on purpose because it trains a model —
   get "corrected" by the next well-meaning agent unless the review says explicitly that they are
@@ -111,16 +112,11 @@ worth keeping:
 
 Both formats feed the same gate: every scenario ends PASS, FAIL, or BLOCKED.
 
-For a device-testing pass that needs to be reproducible by someone else (or by a future subagent), write it as numbered, independently-runnable files, each with this shape:
-
-```
-### N.M <short title>
-- Preconditions: <what must already be true/done>
-- Steps: <numbered shell commands, adb-based>
-- Expected: <what should happen, described concretely>
-- Verify: <exactly what in the command output/screenshot confirms it>
-- Pass/Fail: PASS if <condition>. FAIL if <condition, with likely cause>.
-```
+For a device-testing pass that needs to be reproducible by someone else (or by a future subagent),
+write it as numbered, independently-runnable files. **The scenario block is defined once, in
+`lifecycle.md` Phase 4 — use it verbatim.** It carries a `BLOCKED if` line that this phase's exit
+gate and the rig doctrine both depend on; a scenario written without one cannot record the state the
+gate asks for.
 
 Practical notes pulled from a working test plan:
 - Export the tool paths once at the top of the harness (`ADB=...`, `APK=...`, `PKG=...`) so every step is copy-pasteable without re-deriving paths.
@@ -168,4 +164,4 @@ Two of those are no longer stylistic at `targetSdk` 36 and should be graded **P0
 
 ## What's deliberately not in here
 
-The ADB test-harness format in section 3 was originally developed on a project that also involved decompiling and modifying a third-party commercial app. Those techniques — defeating another vendor's licensing, DRM, or pairing checks — are **deliberately excluded** from this skill. They are IP circumvention aimed at someone else's software, not a generalizable way to build your own Android app, and nothing here should be read as a template for them. What was worth keeping is the harness structure itself, which is entirely independent of that context.
+**Out of scope:** techniques for defeating another vendor's licensing, DRM, or pairing checks. That is IP circumvention aimed at someone else's software, not a way to build your own Android app, and nothing here should be read as a template for it. The harness structure above is entirely independent of any of that.

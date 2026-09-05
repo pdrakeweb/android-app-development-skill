@@ -28,7 +28,7 @@ wins.** Install this one *alongside* them, not instead of them.
 | `references/user-calibration.md` | Establishing the user's experience level, then tuning vocabulary, explanation depth and how much to decide for them; plain-language glossary for every term the skill uses |
 | `references/intake-interview.md` | Ten broad-to-narrow questions asked before any code, plus dynamically generated follow-ups |
 | `references/design-phase.md` | Design tokens, mockup generation and the converge-on-one loop, seed-colour theme generation, contrast as a unit test, and the three-seat council design review |
-| `references/lifecycle.md` | The eight phases, each with an artifact and an exit gate |
+| `references/lifecycle.md` | The nine phases (0 through 7, with a 1b), each with an artifact and an exit gate |
 | `references/platform-currency.md` | Dated version pins, the AGP 9 break, API 36 behaviours that break working apps, Play deadlines, developer verification |
 | `references/ecosystem.md` | Android CLI, the per-phase Google-skill routing table, Journeys, MCP device control, prior art |
 | `references/bootstrapping.md` | Starting a project, or extracting one from a monorepo; architecture defaults |

@@ -21,7 +21,15 @@ This is the canonical statement of the permission doctrine. `SKILL.md`, `intake-
 
 ### The gotcha that started this
 
-**The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not enough on API 33/34+.** A real-hardware bug report on a Wear OS app nailed the exact failure mode:
+**The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not
+enough.** It has not been enough since **API 23** — *"If you declare any dangerous permissions, and
+if your app is installed on a device that runs Android 6.0 (API level 23) or higher, you must
+request the dangerous permissions at runtime"*
+(<https://developer.android.com/training/permissions/requesting>). This matters at the low end of
+this skill's range: with `minSdk 28`, every device the app installs on requires the runtime request.
+The bug report below says "API 33/34" because that is the hardware it was found on, not the
+threshold — API 33 is where `POST_NOTIFICATIONS` *joined* the runtime set, not where runtime
+requests began. A real-hardware bug report on a Wear OS app nailed the exact failure mode:
 
 > BODY_SENSORS IS PROBABLY NEVER REQUESTED AT RUNTIME. Declaring it in the manifest is not enough on API 33/34. If the app never calls requestPermissions, Health Services will refuse and monitoring cannot start — and no user without adb could ever get past it.
 

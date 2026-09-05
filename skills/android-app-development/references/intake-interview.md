@@ -94,8 +94,8 @@ Ask these — or the subset that survives Q0 and earlier answers — every time.
 
 Two or three sentences. **Push hard on the second half**, it's the load-bearing one. The best spec
 in the corpus opens with *"It is not a fitness tracker. Every fitness device is built to tell you to
-do more. This one exists to tell you when to stop."* That single sentence has rejected more bad
-feature ideas than every other line of that repo combined.
+do more. This one exists to tell you when to stop."* That single sentence gives every later
+"should we add..." a stated reason to be measured against, which is the whole job of the question.
 
 Follow-up if the "not" comes back empty: *"What's the closest existing app to this, and what does
 it get wrong?"* — that usually produces the same answer sideways.
@@ -251,7 +251,7 @@ declared in the manifest and never requested at runtime, so the feature installs
 healthy and never functions.
 
 Network discovery (mDNS/NSD) and inbound UDP get one extra note at intake, not at debug time: they
-**cannot work on a standard emulator** and force a real-device test rig.
+**need a real-device test rig**, because the emulator does not support IGMP and so cannot see multicast traffic from hardware on the LAN. Outbound TCP and UDP from the emulator work normally — it is discovery specifically that breaks.
 
 ### 9 · What is the one thing this app must never get wrong?
 
@@ -298,7 +298,7 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 |---|---|
 | **Watch in scope** | Which Wear OS versions does the target watch *actually run* today? Tiles or complications? What shows when unpaired? Is the watch a sensor source or the primary UI? Battery expectations for continuous sensing? |
 | **Background operator** | What wakes it (schedule, sensor, push, boot)? Foreground-service type? What must survive Doze and reboot? What's the user-visible evidence it's running — and what does it show when it has silently stopped? |
-| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? **If a tablet is in scope, "orientation locked" is not achievable via the manifest** — at `targetSdk` 36 those restrictions are ignored on screens ≥600dp, so a portrait-locked design gets a landscape window anyway (`platform-currency.md` §4). Decide the adaptive layout now, not after the first tablet screenshot |
+| **Kiosk** | Orientation locked? Screen kept on? What happens on an incoming call or a system dialog? Is there a way out of the kiosk, and who's allowed to take it? **If a tablet is in scope, do not plan on a manifest orientation lock** — at `targetSdk` 36 those restrictions are ignored on screens ≥600dp, so a portrait-locked design gets a landscape window anyway. A temporary opt-out property exists and stops working at `targetSdk` 37, so it buys migration time and is not a design (`platform-currency.md` §4). Decide the adaptive layout now, not after the first tablet screenshot |
 | **Native code or a vendor SDK** | Which ABIs ship? 16 KB page support (required for native `.so`)? On Wear OS, both 32- and 64-bit are required by Play since 2026-09-15. An x86_64 emulator pass is not evidence for an `arm64` target |
 | **AI/LLM** | Routing rules between models? What's never sent? Streaming or batch? What does a refusal, a timeout, and a truncated response each look like on screen? Cost ceiling? |
 | **On-device model** | How big is the download, and over what network? Where is it cached, and is integrity verified? What does the app do while it downloads, and if it fails halfway? |
@@ -307,7 +307,7 @@ not the limit; add any question where a wrong guess would be invisible in a demo
 | **LAN / discovery / accessory** | Real device required for testing — confirmed? What's the manual-address fallback for emulator work? What does "the thing went away" look like, and how long before the app gives up? |
 | **Named safety invariant exists** | What's the automated test that proves it? What's the observable symptom if it's ever violated? Does any module get to opt out? |
 | **Distributed beyond you** | Crash reporting — wanted, or forbidden? Privacy policy needed? What's the update path once someone else has an old build? |
-| **Any UI at all** | What does every screen show with *no data yet*? (Empty states are the highest-yield question in this table — the corpus's rule is that a value computed from nothing must never render as a finding, and an empty first install is the cheapest possible test of it.) |
+| **Any UI at all** | What does every screen show with *no data yet*? (Empty states earn their place here — the corpus's rule is that a value computed from nothing must never render as a finding, and an empty first install is the cheapest possible test of it.) |
 | **Any runtime permission at all** | Which are essential and which enhancing, and does the user agree with the split? Which feature does each one fire from — and if the answer is "app startup", which feature was it supposed to be? What does each denial leave working? Has anyone checked the *permanently* denied state, where the system prompt never appears again? (`permissions-storage-cloud.md`) |
 | **Any failure path at all** | When something doesn't work, what does the user see? A button that does nothing with no explanation is treated as the worst failure mode in this corpus, worse than an error message. |
 

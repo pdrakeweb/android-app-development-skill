@@ -9,7 +9,7 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preflight.sh *), Bash(${CLAUDE_S
 
 # Android App Development (Claude Code)
 
-This skill encodes the workflow that has actually shipped working Android apps — not generic Android advice. It is opinionated because the source material was opinionated: every pattern here comes from a session that produced a working APK, a merged fix, or a documented finding.
+This skill encodes the workflow that has actually shipped working Android apps — not generic Android advice. It is opinionated: every pattern here comes from a session that produced a working APK, a merged fix, or a documented finding.
 
 It is a **process spine**, and it is deliberately not an Android API reference. Google ships official, maintained agent skills for the API-level ground truth that goes stale in ninety days — install those and defer to them (`references/ecosystem.md`). When one of them disagrees with something written here, it wins.
 
@@ -29,7 +29,7 @@ Where a lesson came from somewhere else, it's described rather than named.
 
 **When the request is "build me an Android app" — or anything that amounts to starting a new app — do not scaffold, do not choose dependencies, and do not write code. Run the intake interview first** (`references/intake-interview.md`), then follow the phases in `references/lifecycle.md`.
 
-The interview is ten broad-to-narrow questions asked in batches of 2–4, followed by dynamically generated follow-ups driven by the answers. It exists because every question in it traces back to something that was built wrong, audited as a defect when it was actually a deliberate decision, or discovered halfway through implementation when it should have been decided in the first ten minutes.
+The interview opens with a calibration question asked on its own, then works through up to ten broad-to-narrow questions in batches of 2–4 — fewer at novice levels — plus two closing questions asked every time and follow-ups generated from the answers. It exists because every question in it traces back to something that was built wrong, audited as a defect when it was actually a deliberate decision, or discovered halfway through implementation when it should have been decided in the first ten minutes.
 
 The phases, each with an artifact and an exit gate:
 
@@ -39,13 +39,13 @@ The phases, each with an artifact and an exit gate:
 | 1 · Spec | `docs/APP_SPEC.md` (+ ADRs, `CLAUDE.md`) | user has read and confirmed it |
 | 1b · Design | `docs/DESIGN_TOKENS.md`, mockups, a named design of record | user has seen and confirmed the design |
 | 2 · Plan | `docs/IMPLEMENTATION_PLAN.md` | **user approves before any code** |
-| 3 · Implement | working code + updated docs | builds, installs, launches, driven by hand |
-| 4 · Test scenarios | `*.journey.xml` and/or `tests/NN-*.md` | suite runs end to end, every result PASS/FAIL/BLOCKED |
-| 5 · Audit & fix | audit report + scoped fix agents | no unresolved Critical/High |
-| 6 · Beta release | signed release build, published | installed and exercised on real hardware |
-| 7 · Handoff | `CLAUDE.md`, `EMULATOR.md`, `DEBUGGING.md`, revisions log | a cold session can build and test it |
+| 3 · Implement | working code + updated docs | `verify-install.sh` exits 0, and a scenario covers the new path |
+| 4 · Test scenarios | `tests/README.md` (the shared harness, written first) + `*.journey.xml` and/or `tests/NN-*.md` | every scenario run, **zero FAILs**, every BLOCKED naming its rig gap |
+| 5 · Audit & fix | `audit/AUDIT_REPORT.md`, every finding marked Fixed / Accepted | no unresolved Critical/High, or each accepted in writing with a reason |
+| 6 · Beta release | signed release build, published | essential scenarios run on real hardware — or BLOCKED, recorded as such |
+| 7 · Handoff | `CLAUDE.md`, `EMULATOR.md`, `DEBUGGING.md`, revisions log | a zero-context subagent builds and tests it with nothing left to guess |
 
-Phases 3–5 loop. Phases 0–2 (including 1b) happen once; re-opening one later is a deliberate act that gets written down, not a drift.
+Phases 3–5 loop; `lifecycle.md` states the exit condition and when to stop looping and escalate. Phases 0–2 (including 1b) happen once; re-opening one later is a deliberate act that gets written down, not a drift.
 
 ## Before you scaffold: the version pins
 
@@ -93,12 +93,12 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 
 ## House rules worth stating explicitly
 
-These showed up often enough, across independent projects, that they're clearly deliberate defaults rather than one-off asks:
+House rules that apply to every project:
 
 - **Personal, non-distributed APKs bake in live credentials on purpose.** This is a documented exception, not an oversight an audit should keep re-flagging — but confirm this framing explicitly with whoever's asking before assuming it, since it does NOT apply to anything that will be distributed, shared, or published (see `permissions-storage-cloud.md` for the boundary and what still needs protecting even in a personal build). Distribution also raises a **developer-verification** question — `platform-currency.md` §6.
 - **A safety- or correctness-critical invariant, once established, gets checked by name in every subsequent audit prompt.** (Example from `field-assistant`: "emergency content renders verbatim, never through the LLM" appears in nearly every audit and fix-agent prompt for that app, worded identically each time.) If your app has an analogous non-negotiable rule, name it explicitly and repeat it verbatim across prompts rather than trusting it to be inferred.
 - **A button, action, or field that does nothing with no explanation is treated as the worst failure mode**, worse than an error message. Every "why didn't this work" bug report in the corpus traces back to a silent no-op somewhere. Default to failing loudly.
-- **A denied permission degrades a feature; it never produces a dead control.** Classify every permission essential or enhancing — enhancing is the default and the burden of proof is on calling anything essential — request it from the feature that needs it rather than at startup, then make denial leave the workflow completing, say plainly what is missing, and offer an inline retry that still works after the prompt is permanently spent. This is the most common cause of the dead-control rule above: the control is right there, it looks live, and the permission behind it is gone (`permissions-storage-cloud.md`).
+- **A denied permission degrades a feature; it never produces a dead control.** Classify every permission essential or enhancing — enhancing is the default and the burden of proof is on calling anything essential — request it from the feature that needs it rather than at startup, then make denial leave the workflow completing, say plainly what is missing, and offer an inline retry that still works after the prompt is permanently spent. It is the readiest way an app grows one: the control is right there, it looks live, and the permission behind it is gone (`permissions-storage-cloud.md`).
 - **Fail closed, and never weaken a guard to make something compile.** Every guard in the corpus exists because the alternative failed *open* and silently. When a value can't be computed, say so — never return the safe-looking one.
 - **A value computed from nothing is never displayed as a finding.** Empty states say they're empty. An empty first install is the cheapest possible test of this, and it has caught fabricated numbers twice.
 - **Every implementation pass ends with a real build and a real test**, not "should work now." "After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature" is a recurring, explicit instruction — say it every time rather than assuming it's implied. `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` makes the check deterministic instead of a claim.
