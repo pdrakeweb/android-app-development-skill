@@ -24,7 +24,7 @@ The practical rule: **enforce with hooks or permissions, teach with skills, isol
 
 That last distinction matters for this skill specifically. Several house rules are *enforcement*, not guidance — "every implementation pass ends with a real build and a real test", "never weaken a guard to make something compile". Prose that the model may or may not honour on turn forty is the wrong shape for those. Two better shapes, both shipped here:
 
-- **Deterministic scripts** (`${CLAUDE_SKILL_DIR}/scripts/`) — `verify-install.sh` turns "I tested it" from a claim into a command with an exit code, and `preflight.sh` catches an AGP-8-era scaffold before the first build.
+- **Deterministic scripts** (`${CLAUDE_SKILL_DIR}/scripts/`) — `verify-install.sh` turns "I tested it" from a claim into a command with an exit code, and `preflight.sh` catches an AGP-8-era scaffold before the first build and exits 1 when anything needs attention.
 - **Hooks** (`hooks/` in this plugin, opt-in) — fire on the tool call itself, so they cannot be forgotten mid-session.
 
 The shared-budget detail is also why `ecosystem.md` says to install Google's skills **at the phase that needs them** rather than all at once: every invoked skill body competes with this one for the same space.

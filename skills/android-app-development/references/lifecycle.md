@@ -151,7 +151,7 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 
 - **Every pass ends with a real build and a real run on an emulator** — not "should work now".
   State it explicitly each time rather than assuming it's implied. **Run
-  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`**, which asserts on `Success`, launches, confirms a
+  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`**, which clears the app's data (pass `--keep-data` to skip), asserts on `Success`, launches, confirms a
   live PID and the foreground activity, and checks the crash buffer — turning "I tested it" from a
   claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
   `bootstrapping.md` for the architecture defaults.

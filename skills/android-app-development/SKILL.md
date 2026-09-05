@@ -116,5 +116,5 @@ Prose instructions get skipped on turn forty. These do not — run them instead 
 | Script | Answers |
 |---|---|
 | `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
-| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? |
-| `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release artifact carry the right ABIs, targetSdk, and a v2+ signature? |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? **Wipes the app's data first** (an empty first install is the cheapest test of the no-value-from-nothing rule) — pass `--keep-data` when that matters |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release APK carry a v2+ signature, and the ABIs and targetSdk you expected? The signature check is unconditional; ABI and targetSdk are only *asserted* when you pass `--expect-abi` / `--expect-target`, and only reported otherwise. It reads APKs, not `.aab` bundles |
