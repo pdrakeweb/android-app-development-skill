@@ -64,9 +64,9 @@ Then apply it to everything that follows:
   what an AVD is — and will not ask, because asking feels like admitting ignorance in their own
   field. This profile is the easiest to misread in both directions at once — over-explaining the
   programming and under-explaining the platform (`user-calibration.md` §4).
-- **Re-calibrate on evidence.** Self-assessment is unreliable both ways. Going quiet after a dense
-  message is a stronger signal than anything they say about themselves — treat sudden agreement with
-  something complicated as a comprehension failure until proven otherwise (`user-calibration.md` §5).
+- **Re-calibrate on evidence.** Self-assessment is unreliable both ways. What they send outweighs what they
+  said about themselves — treat contentless agreement after a dense message as a comprehension
+  failure until proven otherwise, and check it with one concrete question (`user-calibration.md` §5).
 - **Record the level in `CLAUDE.md`** at Phase 1, with the reason, so the next session doesn't reset
   to a different register (`user-calibration.md` §6).
 - **Keep building the persona after Q0 — a label is not a persona.** The level is scaffolding for
