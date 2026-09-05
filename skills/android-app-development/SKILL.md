@@ -57,7 +57,8 @@ A cold session working from training data will scaffold a project that does not 
 | Gradle | **9.6.0** (AGP 9.4's minimum — 9.1 is not enough) |
 | JDK | **17** |
 | SDK Build Tools | **36.0.0** |
-| compileSdk / targetSdk | **36 / 36** — *not* 37; API 37 (Android 17) is still beta |
+| compileSdk | **37** — Android 17 is stable; track the newest stable SDK |
+| targetSdk | **36** — what Play requires; moves only when tested |
 | minSdk | **28** (corpus floor) |
 | Wear OS / Automotive targetSdk | **35** · TV / XR: **34** |
 
@@ -70,7 +71,7 @@ for either number — ask how old a phone it must work on (`intake-interview.md`
 
 Three consequences that bite immediately, all detailed in `platform-currency.md`:
 
-- **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, non-final resource IDs by default, `android.enableJetifier` now a build error. Install Google's `agp-9-upgrade` skill rather than hand-writing this.
+- **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, and `kapt` incompatible with built-in Kotlin — which this skill's Hilt default walks straight into, so move to KSP. Install Google's `agp-9-upgrade` skill rather than hand-writing this.
 - **targetSdk 36 has been required by Play since 2026-08-31.** Edge-to-edge can no longer be opted out of, and predictive back is on by default — so `onBackPressed()` is never called, which silently deletes any unsaved-work guard built on it.
 - **If this date is more than a month or two old, re-verify before scaffolding.** `platform-currency.md` §2 says how, in three steps.
 

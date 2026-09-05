@@ -192,7 +192,7 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **`targetSdk`** | Which Android version's rules the app follows. **Not** a compatibility floor |
 | **`compileSdk`** | Which version's toolkit the app is built against. Invisible to users |
 | **ABI** | The chip type the app's low-level code is built for (most phones: `arm64-v8a`) |
-| **16 KB pages** | A newer memory layout; only matters if the app contains low-level native code |
+| **16 KB pages** | A newer memory layout; only matters if the app ships low-level native code — including native code inside a dependency or SDK, not just code you wrote |
 
 ### Build tooling
 
@@ -209,7 +209,7 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **R8 / ProGuard / minify** | Shrinks and obfuscates the app for release |
 | **Keep rule** | An instruction telling the shrinker not to delete something it can't see is used |
 | **dex** | The compiled-code files inside an app package |
-| **Jetifier** | An obsolete compatibility shim. Its presence is now an error |
+| **Jetifier** | An obsolete compatibility shim for pre-AndroidX libraries; off by default and going away — if you find it switched on, turn it off |
 
 ### Running and debugging
 
@@ -220,7 +220,8 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **`aapt2` / `apksigner`** | Tools that inspect an app file / check its signature |
 | **Stack trace** | The error report showing where a crash happened |
 | **USB debugging** | A phone setting that lets your computer install and inspect apps |
-| **WHPX / AEHD / HAXM** | Windows features that make the emulator run at usable speed |
+| **WHPX** | The Windows feature that makes the emulator run at usable speed — the one to turn on |
+| **AEHD / HAXM** | Older emulator accelerators installed as drivers rather than Windows features; both are being retired, so move to WHPX |
 
 ### Architecture and code
 
@@ -250,13 +251,13 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **MASVS / MASTG** | An industry security checklist with stable numbered items |
 | **mDNS / NSD** | How apps find devices on the local network automatically |
 | **GPP** (Gradle Play Publisher) | A tool that uploads releases to the Play Store for you |
-| **Developer verification** | Google's new requirement to prove your identity to distribute apps |
+| **Developer verification** | Google's identity check for developers whose apps get installed on ordinary Android phones; rolling out by country. It does not affect putting your own app on your own phone over a cable |
 
 ---
 
 ## 8 · Toolchain setup by level
 
-**The important fact, and it is easy to miss inside a 440-line reference: almost none of
+**The important fact, and it is easy to miss inside a long reference: almost none of
 `windows-toolchain-and-emulators.md` is work for the user.** It is work for *you*. Only a handful of
 steps genuinely need a human, because they involve a download, a system dialog, a reboot, or
 physical hardware.

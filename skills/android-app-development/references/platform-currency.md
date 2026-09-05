@@ -30,28 +30,32 @@ version catalog, the emulator images, the release build — depends on these. Pu
 |---|---|---|
 | **AGP** | **9.4.0** (September 2026) | Current stable |
 | **Gradle** | **9.6.0** | AGP 9.4's minimum *and* default — 9.1 is not enough |
-| **JDK** | **17** | AGP 9.4 minimum and default. A newer JDK is not a drop-in substitute |
+| **JDK** | **17** | AGP 9.4 minimum and default. Pick a JDK at or above every plugin in the build ([JDK guide](https://developer.android.com/build/jdks)) |
 | **SDK Build Tools** | **36.0.0** | AGP 9.4 minimum and default |
 | **NDK** (only if native code) | **28.2.13676358** | AGP 9.4 default |
-| **compileSdk** | **36** | See the warning below — **not** 37 |
+| **compileSdk** | **37** | Android 17 is stable; compile against the newest stable SDK (see below) |
 | **targetSdk** | **36** | Required by Play since 2026-08-31 (§5) |
 | **minSdk** | **28** | The observed floor across this corpus; raise it, don't lower it, without a reason |
 | **Wear OS / Automotive targetSdk** | **35** | Play's form-factor exception (§5) |
 | **TV / XR targetSdk** | **34** | Play's form-factor exception (§5) |
 | **Max API supported by AGP 9.4** | 37 | Ceiling, not a recommendation |
 
-> **compileSdk 36, not 37.** AGP 9.4 *supports* API 37, and it is tempting to reach for the highest
-> number the toolchain accepts. **Android 17 (API 37) is still in beta** as of this file's
-> verification date — it ships as QPR betas with API-diff pages against API 36. Compiling a
-> first project against a beta SDK buys nothing and costs a class of failures that are
-> indistinguishable from your own bugs. Use 36 until Android 17 goes stable, then move
-> `compileSdk` first and `targetSdk` only when Play requires it.
+> **`compileSdk` and `targetSdk` move on different schedules, and that is deliberate.**
+> `compileSdk` should track the newest *stable* SDK, because compiling against it surfaces
+> deprecations early and costs nothing at runtime — it does not change a single behaviour on a
+> device. `targetSdk` is what opts the app into a new release's behaviour changes, so it moves when
+> Play requires it and you have tested those changes, not before. Android 17 (API 37) is stable, so
+> `compileSdk 37` with `targetSdk 36` is the correct pairing today. Only the QPR releases are in
+> beta; never point `compileSdk` at one of those.
+
+**Rule of thumb:** `compileSdk` = newest stable. `targetSdk` = what Play requires and you have
+tested. `minSdk` = how old a phone must still run it. Raising `compileSdk` never drops a device.
 
 **Kotlin Gradle Plugin:** AGP 9 introduces built-in Kotlin (§3), which changes how KGP is applied
-and pins a minimum version. That minimum was **not verified first-hand** for this file — do not
-copy a number from memory into a version catalog. Read
-<https://developer.android.com/build/migrate-to-built-in-kotlin> or install Google's
-`agp-9-upgrade` skill (see `ecosystem.md`) and take the value from there.
+and pins a minimum. *"Android Gradle plugin 9.0 now has a runtime dependency on Kotlin Gradle plugin
+(KGP) **2.2.10**"* — a lower version is silently upgraded to it
+(<https://developer.android.com/build/releases/agp-9-0-0-release-notes>). Re-read that page rather
+than the migration guide when you need the number; the migration guide does not carry it.
 
 ---
 
@@ -80,14 +84,18 @@ not name the real cause. The changes that bite:
 - **Built-in Kotlin.** You no longer apply `org.jetbrains.kotlin.android` — AGP provides Kotlin
   itself. The old plugin is *not compatible* with the new DSL. This is the one that most often
   produces a wall of confusing configuration errors on a scaffold copied from an older template.
-- **The old variant API is gone.** AGP 9 uses the new DSL interfaces exclusively. A
-  `gradle.properties` opt-out (`android.newDsl.optOut=:module`) exists as a migration bridge and
-  becomes unavailable in AGP 10 — treat it as a deadline, not a setting.
-- **Non-final resource IDs are the default.** `when (view.id) { R.id.x -> ... }` no longer compiles,
-  because a `when` on a non-constant needs `if/else` branches. Mechanical to fix, baffling if you
-  don't know why.
-- **`android.enableJetifier` now throws a build error** rather than warning. If it's in an inherited
-  `gradle.properties`, delete it and deal with whatever support-library dependency put it there.
+- **The old variant API is gone.** AGP 9 uses the new DSL interfaces exclusively. Two
+  `gradle.properties` bridges exist — `android.newDsl=false` project-wide, `android.newDsl.optOut=:module`
+  per module — and both go away in AGP 10. Treat them as a deadline, not a setting.
+- **`kapt` is incompatible with built-in Kotlin.** *"The `org.jetbrains.kotlin.kapt` (or
+  `kotlin-kapt`) plugin is incompatible with built-in Kotlin"*
+  (<https://developer.android.com/build/migrate-to-built-in-kotlin>). This skill's default stack
+  includes Hilt, so a template carrying `kapt` walks straight into it — move to KSP.
+- **`android.enableJetifier` is obsolete.** It is off by default and slated for removal in AGP 10; if
+  it is in an inherited `gradle.properties`, delete it and move the offending dependency to its
+  AndroidX version. AGP 9 does *not* fail the build on it — the two properties it does error on are
+  `android.r8.integratedResourceShrinking` and `android.enableNewResourceShrinker.preciseShrinking`
+  (<https://developer.android.com/build/releases/agp-9-0-0-release-notes>).
 - **KMP modules move to `com.android.kotlin.multiplatform.library`**, off `com.android.library`.
 
 **Do not hand-write an AGP 9 migration from this list.** It is here so you recognise the symptoms.
@@ -112,14 +120,27 @@ These fire when `targetSdk` reaches 36, which Play now requires (§5). Each one 
   interception, unsaved-draft guards, or custom back handling **loses that behaviour silently** —
   the back gesture simply works, and whatever the override was protecting is gone. This is exactly
   the silent-failure class this skill's house rules are built around. Migrate to
-  `OnBackPressedDispatcher` / `BackHandler`.
+  `OnBackPressedDispatcher` / `BackHandler`. `android:enableOnBackInvokedCallback="false"` on the
+  `<application>` or `<activity>` buys time and is a bridge, not a fix
+  (<https://developer.android.com/about/versions/16/behavior-changes-16>).
 - **Orientation and resizability restrictions are ignored on large screens.** On displays with
   smallest width ≥ 600dp, manifest `screenOrientation`, aspect-ratio and `resizeableActivity`
   restrictions do not apply. A portrait-locked phone layout will be handed a landscape tablet
   window. If the app is a kiosk or a remote-control surface that assumed a locked orientation
-  (intake Q2), that assumption is void on tablets — test it there.
-- **16 KB memory pages** for any native `.so`. Only relevant with native code or a vendor SDK.
-  `android:pageSizeCompat` is a short-term bridge, not a fix.
+  (intake Q2), that assumption is void on tablets — test it there. Two documented escapes exist and
+  both expire: the `android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` manifest property,
+  which stops working once `targetSdk` reaches 37, and an exception for apps declaring
+  `android:appCategory="game"`
+  (<https://developer.android.com/about/versions/16/behavior-changes-16>). Use the property to buy
+  migration time, never as the destination.
+- **16 KB memory pages.** This one does *not* wait for `targetSdk` 36 — it fires at **35**: *"all
+  apps targeting Android 15 (API level 35) and higher must support 16 KB memory page sizes on 64-bit
+  devices on Google Play"*, with Play blocking non-compliant updates from **2027-02-01**
+  (<https://developer.android.com/guide/practices/page-sizes>). "Uses native code" includes native
+  code you never wrote: *"Your app links with any third-party native libraries or dependencies (such
+  as SDKs) that use them."* A pure Kotlin app with one analytics or ML SDK is in scope. Prebuilt
+  `.so` files must be recompiled and reimported, not just repackaged. `android:pageSizeCompat` is a
+  short-term bridge, not a fix.
 
 ---
 
@@ -194,9 +215,14 @@ Nobody outside Android development thinks in API levels, and the intake intervie
 not ask for one (`intake-interview.md` Q4). This is the translation table — the user answers in
 phones and years, you write down a number.
 
-| Android | API | Released | Roughly |
+Dates below are **platform-stability** dates from
+<https://developer.android.com/tools/releases/platforms> — when the SDK froze, which runs ahead of
+when phones got the OS. Use them for ordering, not as ship dates.
+
+| Android | API | SDK stable | Roughly |
 |---|---|---|---|
-| 16 | 36 | Mar 2025 | Current — the `targetSdk` Play requires |
+| 17 | 37 | 2026 | Current stable — what `compileSdk` tracks |
+| 16 | 36 | Mar 2025 | The `targetSdk` Play requires |
 | 15 | 35 | Jun 2024 | Last year's phones |
 | 14 | 34 | Jun 2023 | |
 | 13 | 33 | Jun 2022 | |
@@ -218,7 +244,7 @@ phones and years, you write down a number.
 
 Three things to keep straight when using this table:
 
-- **The release date is when the OS shipped, not how old the phone is.** Phones receive OS updates
+- **The date is when the SDK stabilized, not how old the phone is.** Phones receive OS updates
   for years, so a 2021 handset may well be running Android 14 today. A device's *current* version
   is what matters for whether the app installs; its shipped version only bounds the worst case.
 - **`targetSdk` is not on this table by choice.** It is 36 because Play requires 36 (§5), on every

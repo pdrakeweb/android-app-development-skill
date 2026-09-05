@@ -178,15 +178,20 @@ rather than arguing about it in a review.
 Compute the WCAG relative-luminance ratio for **every foreground/background pairing the app
 actually draws**, per palette, and fail the build below threshold:
 
-| | Body text | Large text and icons |
-|---|---|---|
-| **AA** | 4.5:1 | 3:1 |
-| **AAA** | 7:1 | 4.5:1 |
+| | Body text | Large text | Icons, controls, focus rings |
+|---|---|---|---|
+| **AA** | 4.5:1 | 3:1 | 3:1 |
+| **AAA** | 7:1 | 4.5:1 | *no AAA tier exists — 3:1 stays the bar* |
 
-Thresholds and the ratio formula: WCAG 2.2 SC 1.4.3 (<https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum>)
-and 1.4.6 (<https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced>); "large" means 18pt, or
-14pt bold. Android's own accessibility guidance points at the same numbers
-(<https://developer.android.com/guide/topics/ui/accessibility/apps#accessible-colors>).
+Text thresholds are WCAG 2.2 SC 1.4.3
+(<https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum>) and 1.4.6
+(<https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced>); "large" means 18pt, or 14pt bold.
+**Icons and controls are a different criterion with no enhanced tier** — SC 1.4.11 Non-text Contrast
+(<https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast>) asks 3:1 of every UI component and
+meaningful graphic against what sits next to it, regardless of size. Folding icons into the
+large-text column invents an AAA icon rule that does not exist and hides the 3:1 obligation on
+controls that are neither large nor text. Android's guidance names the AA text pair only, in `sp`
+rather than points (<https://developer.android.com/guide/topics/ui/accessibility/apps>).
 
 Hold a high-contrast palette to **AAA**, not AA. The corpus's reasoning is worth keeping: in an
 office the only cost of raising contrast is raising contrast; on a device used in bright sun or in
