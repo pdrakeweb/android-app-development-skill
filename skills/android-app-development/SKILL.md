@@ -1,6 +1,6 @@
 ---
 name: android-app-development
-version: 0.3.0
+version: 0.4.0
 description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
 license: Apache-2.0
 compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
