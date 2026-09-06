@@ -169,12 +169,15 @@ Run with `./gradlew journeysTest`.
 - **Journeys need the device to themselves.** The plugin serialises execution within and across
   builds (10-minute queue timeout) because two agents tapping at once on one screen is nonsense. It
   assumes a single attached device; set `ANDROID_SERIAL` per invocation for more.
-- **Permissions may be granted automatically.** Studio's Journeys grant all app permissions by
-  default when testing a journey. That **silently defeats every runtime-permission test case** —
-  which is the single most-repeated bug class in this corpus
-  (`permissions-storage-cloud.md`). Verify the behaviour of whichever executor you use, and if
-  permissions are auto-granted, **keep the permission-denial scenarios as ADB tests**, where you
-  control grant state with `pm revoke` / `pm clear`.
+- **Permissions are granted automatically — this is documented behaviour, not a possibility.**
+  Studio's Journeys grant all app permissions by default when testing a journey
+  (<https://developer.android.com/studio/gemini/journeys>). That **silently defeats every
+  runtime-permission test case**: the denial path is never exercised and the scenario passes for the
+  wrong reason. **This is the canonical statement of the limit** — `lifecycle.md` Phase 4 and
+  `testing-and-bugs.md` §3 both defer here. So keep every permission scenario as an ADB test, where
+  `pm revoke` / `pm clear` put grant state under your control, and cover all three not-granted
+  states rather than one: never-asked, denied-once, permanently-denied
+  (`permissions-storage-cloud.md`). Verify the behaviour of any other executor before trusting it.
 
 ### So which format?
 

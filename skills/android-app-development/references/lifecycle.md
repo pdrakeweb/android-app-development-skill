@@ -151,9 +151,14 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 
 - **Every pass ends with a real build and a real run on an emulator** — not "should work now".
   State it explicitly each time rather than assuming it's implied. **Run
-  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`**, which clears the app's data (pass `--keep-data` to skip), asserts on `Success`, launches, confirms a
-  live PID and the foreground activity, and checks the crash buffer — turning "I tested it" from a
-  claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
+  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`** — this is where what it does is
+  written down, and the other references point here. It **clears the app's data first** (an empty
+  first install is the cheapest test of the no-value-from-nothing rule; pass `--keep-data` when that
+  matters), asserts on `Success` rather than trusting the exit code, clears the crash buffer before
+  launching, launches, confirms a live PID and the foreground activity, then reads the crash buffer
+  scoped to that PID — the buffer is system-wide, so an unscoped read fails good builds on an
+  unrelated vendor crash. Exit codes: 0 pass, 1 usage/env, 2 install, 3 launch, 4 crash. That turns
+  "I tested it" from a claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
   `bootstrapping.md` for the architecture defaults.
 - **Run `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
   produces configuration-time errors that never name the real cause, and an AGP 8-era scaffold does
@@ -194,7 +199,7 @@ assuming a scenario fits:
 
 | Keep as an ADB test | Because |
 |---|---|
-| Runtime permission grant/deny | A Journey may auto-grant every permission, so the denial path is never exercised and the test passes for the wrong reason |
+| Runtime permission grant/deny | Journeys grant all app permissions by default, so the denial path is never exercised and the test passes for the wrong reason (`ecosystem.md` §3) |
 | Fault injection against a peer | Needs a scriptable way to make the peer refuse/hang/starve/vanish |
 | LAN / discovery / real-rig work | *"The emulator does not support IGMP"*, so multicast discovery against real LAN hardware needs a device rig ([emulator networking](https://developer.android.com/studio/run/emulator-networking-address)). Outbound TCP and UDP work fine; inbound needs explicit redirection |
 | ARM verification, artifact shape | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`, not a UI flow |

@@ -12,8 +12,12 @@
 
 ## Runtime permissions
 
-This is the canonical statement of the permission doctrine. `SKILL.md`, `intake-interview.md` Q8,
-`lifecycle.md` and `testing-and-bugs.md` all point here rather than restating it.
+This is the canonical statement of the permission doctrine, and the only place the **facts** live —
+API levels, flag semantics, what each API returns and when. `SKILL.md`, `intake-interview.md` Q8,
+`lifecycle.md` and `testing-and-bugs.md` restate the *rules* at the point of use, deliberately: an
+agent deciding something on turn forty should not have to open a second file to be told to classify
+a permission. When one of them disagrees with this file on a fact, this file is right and the other
+is stale.
 
 **Contents:** [The gotcha](#the-gotcha-that-started-this) · [Essential vs enhancing](#essential-vs-enhancing)
 · [In context, at the feature](#request-in-context-at-the-feature) · [Degradation contract](#the-degradation-contract)

@@ -72,7 +72,7 @@ for either number — ask how old a phone it must work on (`intake-interview.md`
 Three consequences that bite immediately, all detailed in `platform-currency.md`:
 
 - **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, and `kapt` incompatible with built-in Kotlin — which this skill's Hilt default walks straight into, so move to KSP. Install Google's `agp-9-upgrade` skill rather than hand-writing this.
-- **targetSdk 36 has been required by Play since 2026-08-31.** Edge-to-edge can no longer be opted out of, and predictive back is on by default — so `onBackPressed()` is never called, which silently deletes any unsaved-work guard built on it.
+- **targetSdk 36 has been required by Play since 2026-08-31** — with an extension available and a different rule for existing apps, both in `platform-currency.md` §5, which owns every deadline in this skill. At 36, edge-to-edge can no longer be opted out of, and predictive back is on by default — so `onBackPressed()` is never called on Android 16+, which silently deletes any unsaved-work guard built on it.
 - **If this date is more than a month or two old, re-verify before scaffolding.** `platform-currency.md` §2 says how, in three steps.
 
 ## When to use which reference
@@ -116,5 +116,5 @@ Prose instructions get skipped on turn forty. These do not — run them instead 
 | Script | Answers |
 |---|---|
 | `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
-| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? **Wipes the app's data first** (an empty first install is the cheapest test of the no-value-from-nothing rule) — pass `--keep-data` when that matters |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? **Wipes the app's data first** — pass `--keep-data` when that matters (`lifecycle.md` Phase 3) |
 | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release APK carry a v2+ signature, and the ABIs and targetSdk you expected? The signature check is unconditional; ABI and targetSdk are only *asserted* when you pass `--expect-abi` / `--expect-target`, and only reported otherwise. It reads APKs, not `.aab` bundles |
