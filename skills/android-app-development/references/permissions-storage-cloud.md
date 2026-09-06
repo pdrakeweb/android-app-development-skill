@@ -12,16 +12,28 @@
 
 ## Runtime permissions
 
-This is the canonical statement of the permission doctrine. `SKILL.md`, `intake-interview.md` Q8,
-`lifecycle.md` and `testing-and-bugs.md` all point here rather than restating it.
+This is the canonical statement of the permission doctrine, and the only place the **facts** live —
+API levels, flag semantics, what each API returns and when. `SKILL.md`, `intake-interview.md` Q8,
+`lifecycle.md` and `testing-and-bugs.md` restate the *rules* at the point of use, deliberately: an
+agent deciding something on turn forty should not have to open a second file to be told to classify
+a permission. When one of them disagrees with this file on a fact, this file is right and the other
+is stale.
 
 **Contents:** [The gotcha](#the-gotcha-that-started-this) · [Essential vs enhancing](#essential-vs-enhancing)
-· [The first-run flow](#the-first-run-flow-is-the-default) · [Degradation contract](#the-degradation-contract)
+· [In context, at the feature](#request-in-context-at-the-feature) · [Degradation contract](#the-degradation-contract)
 · [Permanent denial](#permanent-denial-is-real-and-most-designs-ignore-it) · [Standing checklist](#standing-checklist)
 
 ### The gotcha that started this
 
-**The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not enough on API 33/34+.** A real-hardware bug report on a Wear OS app nailed the exact failure mode:
+**The single most-repeated gotcha in the corpus: declaring a permission in the manifest is not
+enough.** It has not been enough since **API 23** — *"If you declare any dangerous permissions, and
+if your app is installed on a device that runs Android 6.0 (API level 23) or higher, you must
+request the dangerous permissions at runtime"*
+(<https://developer.android.com/training/permissions/requesting>). This matters at the low end of
+this skill's range: with `minSdk 28`, every device the app installs on requires the runtime request.
+The bug report below says "API 33/34" because that is the hardware it was found on, not the
+threshold — API 33 is where `POST_NOTIFICATIONS` *joined* the runtime set, not where runtime
+requests began. A real-hardware bug report on a Wear OS app nailed the exact failure mode:
 
 > BODY_SENSORS IS PROBABLY NEVER REQUESTED AT RUNTIME. Declaring it in the manifest is not enough on API 33/34. If the app never calls requestPermissions, Health Services will refuse and monitoring cannot start — and no user without adb could ever get past it.
 
@@ -39,10 +51,11 @@ the default:
 | **ESSENTIAL** | The app's core purpose is impossible without it | A camera app without `CAMERA`. A step counter without `ACTIVITY_RECOGNITION` |
 | **ENHANCING** | A feature is degraded; the app remains genuinely useful | Location that stamps a record. Notifications that remind |
 
-**Most apps have zero or one essential permission.** The burden of proof is on calling something
-essential, and the honest test is: *with this denied, is there still an app here?* If a user could
-open it, do the main thing, and get value, it is enhancing — no matter how central it feels to the
-implementation.
+**Enhancing is the default, and the burden of proof is on calling anything essential.** The honest
+test is: *with this denied, is there still an app here?* If a user could open it, do the main thing,
+and get value, it is enhancing — no matter how central it feels to the implementation. Expect the
+count of genuinely essential permissions to be small; a manifest where most of them come out
+essential is an audit finding, not a description of the app.
 
 > **The anti-pattern, and it is the common one:** a permission classified essential because it was
 > convenient to code against. That is how an app becomes uninstallable-in-practice for someone who
@@ -54,35 +67,50 @@ Q1), propose the split, and confirm it in plain words. Record the classification
 in the spec (`lifecycle.md` Phase 1, item 7) — a bare "essential" that nobody can re-derive gets
 re-litigated at the first denial bug.
 
-### The first-run flow is the default
+### Request in context, at the feature
 
-**Whenever the app declares any runtime permission, the recommended default is a first-run
-onboarding sequence**, not just-in-time prompting at the moment of use. Just-in-time is the API
-docs' default and it is fine for a single permission; it is poor for three, because the user meets
-three system dialogs with no context and declines the one they don't understand.
+**Request each permission at the moment the user invokes the feature that needs it — not at app
+startup, and not in a first-run sequence that front-loads every prompt.** This is the documented
+workflow — *"Ask for a permission in context, when the user starts to interact with the feature that
+requires it"* (<https://developer.android.com/training/permissions/requesting#principles>), whose
+step 3 is *"Wait for the user to invoke the task or action in your app that requires access to
+specific private user data"* — and it is a Play quality criterion. `Runtime_Permissions` reads *"App
+requests runtime permissions when the functionality is requested, rather than during app startup,"*
+and its test verifies the requests fire lazily
+(<https://developer.android.com/docs/quality-guidelines/core-app-quality>).
 
-The shape:
+The reason is not ceremony. A permission asked in context arrives with its explanation already
+built: the user just tapped the thing it is for, so the dialog reads as the obvious next step. A
+permission asked on first run has to manufacture a reason for itself against a screen the user has
+not seen yet, which is why front-loaded prompts get declined by people who would have granted them
+thirty seconds later.
 
-- **One explainer page per permission, before the system prompt fires.** Plain language: what it is
-  for, and what specifically stops working without it. Not "we need location to improve your
-  experience" — *"location stamps each entry with where you were; without it entries still save,
-  just without a place."*
+**Where a guided sequence is right:** when one feature genuinely needs several permissions at once —
+a run tracker's first "Start" needing location, activity recognition and notifications together.
+That sequence is still in context, because the user invoked the feature; it just has more than one
+prompt in it. Attaching the same sequence to app launch is the thing the criterion rules out.
+
+When you do run several prompts in a row, the shape that survives contact with users:
+
+- **One explainer per permission, before the system prompt fires.** Plain language: what it is for,
+  and what specifically stops working without it. Not "we need location to improve your experience"
+  — *"location stamps each entry with where you were; without it entries still save, just without a
+  place."*
 - **Requested one at a time. Never batched.** A `RequestMultiplePermissions` call presenting three
   dialogs back to back is the batching this forbids, whatever the API allows.
-- **Denial never blocks progress through onboarding.** The Continue control stays enabled.
-- **A denial-summary screen afterwards**, listing exactly what will not work, with a per-item button
-  to try again and a **"Continue anyway" that is always enabled**.
-- **Skippable in full, and re-reachable from Settings** — someone who skipped on a train needs a way
-  back that is not a reinstall.
+- **Denial never blocks progress.** The Continue control stays enabled.
+- **A summary afterwards**, listing exactly what will not work, with a per-item button to try again
+  and a **"Continue anyway" that is always enabled**.
+- **Skippable in full, and re-reachable from the feature and from Settings** — someone who skipped
+  on a train needs a way back that is not a reinstall.
 
-**When to deviate** — the flow is the default, not a mandate, and departing from it is fine as long
-as you say why:
-
-| Situation | Do instead |
+| Situation | Do |
 |---|---|
-| Permission tied to one rarely-used feature | Request it in context, at the feature |
-| Exactly one permission, and its purpose is obvious from the screen | The sequence may be more ceremony than it earns |
-| A permission the OS only grants in a specific flow | Follow the platform's flow; note it in the spec |
+| One permission, one feature | Request it when the feature is tapped. This is the common case |
+| Several permissions, one feature | The guided sequence above, fired by that feature |
+| A permission for a rarely-used corner of the app | Request it at that corner, never earlier |
+| A permission the OS only grants inside a specific flow | Follow the platform's flow; note the deviation and why in the spec |
+| Tempted to ask at startup | Something is misclassified. Find the feature that needs it |
 
 Build on the documented workflow — `ContextCompat.checkSelfPermission()`, then
 `shouldShowRequestPermissionRationale()` for the educational UI, then
@@ -94,7 +122,10 @@ hand-rolled equivalent:
 ### The degradation contract
 
 **For an ENHANCING permission, denial must produce all four of these.** Three out of four is a
-defect:
+defect. Play's `Graceful_Degradation` criterion states the floor — *"App gracefully degrades when
+users deny or revoke a permission. App shouldn't prevent user access altogether"*
+(<https://developer.android.com/docs/quality-guidelines/core-app-quality>) — and the four items are
+what meeting it looks like in code:
 
 1. **The surrounding workflow still completes.** A log entry with no position still saves. If the
    save button stops working because location was denied, the classification was wrong or the
@@ -112,9 +143,11 @@ defect:
 **For an ESSENTIAL permission, "fail closed" does not license a dead end.** Failing closed means not
 proceeding without the capability; it does not mean a blank screen. Denial produces a screen that
 states what the app cannot do, why the permission is unavoidable (in the app's terms, not the API's),
-a button to grant it, and **a route to whatever the app can still do, if anything** — a settings
-screen, an export, an offline view. "Nothing, and here is why" is an acceptable answer only after
-you have looked for something.
+a button to grant it, and **a route to whatever the app can still do** — a settings screen, an
+export, an offline view. `Graceful_Degradation` asks for an alternative use case rather than a wall,
+so if you cannot find one, treat that as evidence the classification is wrong before you treat it as
+a property of the app. That screen also belongs at the feature, not at launch: an essential
+permission does not license a gate in front of the whole app.
 
 ### Permanent denial is real, and most designs ignore it
 
@@ -131,8 +164,37 @@ So the inline control must branch:
 - permission grantable → launch the system prompt;
 - permanently denied → deep-link to the app's settings page, and say that is where it now lives.
 
-`shouldShowRequestPermissionRationale()` returning `false` on a not-yet-granted permission is the
-signal that the prompt is spent. Test both states — see the flags below.
+**Detecting which branch you are in takes one bit of your own state.** The obvious rule —
+"`shouldShowRequestPermissionRationale()` is `false` and the permission is not granted, therefore
+the prompt is spent" — is wrong, and wrong in the direction that breaks first run. The documented
+meaning of that call is the `true` case: it returns `true` when the user has already denied the
+request once, and that is your cue to show the educational UI
+(<https://developer.android.com/training/permissions/requesting#explain>). `false` is everything
+else, and "everything else" includes the fresh install where the app has never asked. An app that
+reads `false` as permanent sends a first-time user straight to a Settings deep link for a permission
+the system would have granted on a single tap.
+
+So persist a "we have asked for this one before" flag — DataStore, one boolean per permission,
+written at the moment you call `launch()` rather than in the result callback, which the process may
+not survive. Then:
+
+| Granted | Asked before | `shouldShowRationale` | State | Do |
+|---|---|---|---|---|
+| yes | — | — | granted | proceed |
+| no | no | (don't read it) | never asked | launch the prompt |
+| no | yes | `true` | denied once | show the rationale, then launch |
+| no | yes | `false` | spent | deep-link to app settings, and say so |
+
+The platform does keep the bit you want — AOSP's implementation ends at
+`(flags & FLAG_PERMISSION_USER_SET) != 0`, so a never-asked permission has no `USER_SET` flag and
+falls straight through to `false`, the same answer `USER_FIXED`, `POLICY_FIXED`, `SYSTEM_FIXED` and
+hard-restricted permissions all return earlier. Apps cannot read those flags without a privileged
+permission, which is why you keep your own copy.
+
+Re-check on `onResume()` after a Settings round trip — a permission granted out there produces no
+callback in your app, and a stale cached "denied" is another way to grow a dead control.
+
+Test all three not-granted states — see the flags below.
 
 ### Standing checklist
 
@@ -142,7 +204,9 @@ Every restricted capability, every audit:
 - [ ] Manifest declaration **and** a runtime request **and** a re-check immediately before the gated
       action fires.
 - [ ] The four-part degradation contract holds for every enhancing permission.
-- [ ] The inline retry branches on permanent denial rather than calling `launch()` blindly.
+- [ ] The inline retry branches on permanent denial rather than calling `launch()` blindly, using a
+      persisted asked-before flag rather than `shouldShowRequestPermissionRationale()` alone.
+- [ ] Every request fires from the feature that needs it, not from startup.
 - [ ] An essential denial lands on an explaining screen with a way forward, not a dead end.
 - [ ] A deny-everything run exists as a test scenario (`testing-and-bugs.md`).
 
@@ -270,7 +334,7 @@ One project explicitly bakes live API credentials into the APK, on the record:
 
 Treat this as a **confirmed, explicit exception for a specific app**, not a default to assume for any new project. Before applying it: confirm the APK genuinely won't be distributed, shared, or published anywhere (including a public GitHub release page — note the corpus also has a project publishing beta APKs to a GitHub releases page, which is a distribution channel even if informal). If there's any chance of distribution, credentials belong in a build-time-injected config the release pipeline can swap, not baked into source.
 
-**Distribution now carries a second question: developer verification.** From 2026-09-30 in Brazil, Indonesia, Singapore and Thailand — and globally through 2027 — apps installed from participating app stores on certified devices must come from a verified developer. Two things follow, and both are good news for the personal-build case:
+**Distribution carries a second question: developer verification.** From 2026-09-30 in Brazil, Indonesia, Singapore and Thailand — and globally through 2027 — apps installed from participating app stores on certified devices must come from a verified developer. Two things follow, and both are good news for the personal-build case:
 
 - **ADB sideloading is unaffected**, and there is an explicit advanced flow for installing from unverified developers. A build you `adb install` on your own device is still just a build.
 - **Limited distribution accounts** cover the "a handful of named people" answer to intake Q10: no government ID, no fee, up to **20 devices**. That is the right instrument for most informal sharing, and it is a better answer than a GitHub releases page for anything you'd rather not treat as public distribution.

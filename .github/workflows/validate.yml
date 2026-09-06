@@ -39,7 +39,21 @@ jobs:
           bash "$S/verify-artifact.sh" /nonexistent.apk && exit 1 || true
           bash "$S/verify-install.sh" && exit 1 || true
 
-          # preflight must survive a directory that is not an Android project.
+          # preflight must survive a directory that is not an Android project, and
+          # must report it. Exit 1 is the correct answer there — it is a check, so a
+          # bare toolchain is a finding, not a pass. Assert it ran to completion
+          # rather than dying midway, and that it did not exit 0 on a machine with
+          # nothing installed.
           tmp=$(mktemp -d)
-          bash "$S/preflight.sh" "$tmp" >/dev/null
+          set +e
+          out="$(bash "$S/preflight.sh" "$tmp" 2>&1)"; rc=$?
+          set -e
+          printf '%s\n' "$out" | grep -q 'preflight clean\|review the warnings above' \
+            || { printf '%s\n' "$out"; echo "preflight did not reach its summary"; exit 1; }
+          [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ] \
+            || { echo "preflight exited $rc on a non-project directory"; exit 1; }
+
+          # And it must actually fail on a bare machine, or every && chain and CI
+          # step downstream reads a broken toolchain as success.
+          [ "$rc" -eq 1 ] || { echo "preflight exited 0 with warnings — it cannot fail"; exit 1; }
           echo "shipped scripts handle bad input without hanging or crashing"

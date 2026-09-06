@@ -66,7 +66,7 @@ and Android's vocabulary is unusually opaque even to strong engineers from other
 | | **L1 Novice** | **L2 Beginner** | **L3 Intermediate** | **L4 Pro SWE** | **L5 Pro Android** |
 |---|---|---|---|---|---|
 | **Programming words** (function, repo, build, dependency) | Avoid entirely | Explain on first use | Use freely | Use freely | Use freely |
-| **Android words** (APK, AVD, ABI, `minSdk`) | Avoid; describe the effect | Explain every time | Explain on first use | Explain on first use | Use freely |
+| **Android words** (APK, AVD, ABI, `minSdk`) | Effect first, term once in parentheses (§7) | Explain every time | Explain on first use | Explain on first use | Use freely |
 | **Explanation depth** | What it does for *them* | What + one-line why | What + why | Why + tradeoff | Tradeoff only |
 | **Questions asked** | Only the judgement ones (Q1, Q7, Q9, Q10) | Those + form factor, style | Most of the ten | All ten | All ten, tersely |
 | **Technical choices** | You decide, state it plainly | You decide, give the reason | Recommend, they confirm | Recommend with tradeoffs | Discuss as peers |
@@ -75,6 +75,13 @@ and Android's vocabulary is unusually opaque even to strong engineers from other
 | **Artifacts** (`APP_SPEC.md`, plan) | Written for you to *review*, plain prose | Plain prose + a terms list | Normal | Normal | Normal, terse |
 | **Code shown unprompted** | No | No | On request | Yes | Yes |
 
+**Reading the table under a split profile (§4).** The two vocabulary rows are already domain-scoped,
+so read each at its own level. For the rest, read at the **lower** of the two — with one exception:
+*Code shown unprompted* follows the programming axis. A strong engineer new to Android still wants
+to see the code; they just want the Android parts named as they go. *Toolchain install* stays at the
+lower level too, because a fluent programmer with no Android SDK on their machine is still someone
+for whom the install is a detour, not a skill test.
+
 Three rules that hold at **every** level, because they are about honesty rather than register:
 
 - **Never fake certainty to sound simpler.** "It depends" simplified into a confident wrong answer
@@ -82,8 +89,9 @@ Three rules that hold at **every** level, because they are about honesty rather 
 - **The house rules don't relax.** A silent failure is still the worst outcome, a guard is still
   never weakened to make something compile, and a judgement call is still escalated rather than
   guessed — you just explain *why* you're stopping in level-appropriate words.
-- **Never say "obviously", "just", or "simply".** At L1–L3 these are the words that make someone
-  stop asking questions, and someone who stops asking questions stops catching your mistakes.
+- **Never say "obviously", "just", or "simply".** A house rule, not a claim about psychology: these
+  words frame not-knowing as a failure, and the person who stops asking stops catching your
+  mistakes.
 
 ---
 
@@ -102,9 +110,8 @@ Android experience
          low                        high
 ```
 
-**The high-programming / low-Android corner is the one a single scale gets wrong**, and it is
-extremely common — an experienced backend, web, or systems engineer building their first Android
-app. For them:
+**The high-programming / low-Android corner is the one a single scale gets wrong** — an
+experienced backend, web, or systems engineer building their first Android app. For them:
 
 - **Keep** all general engineering vocabulary. Explaining what a build system or dependency
   injection is wastes their time and reads as condescension.
@@ -124,21 +131,38 @@ balance wrong."*
 
 ## 5 · Re-calibrating mid-project
 
-**Self-assessment is unreliable in both directions**, so treat Q0's answer as a starting estimate,
-not a fact. Adjust on evidence and say that you're doing it.
+**Self-assessment of expertise is unreliable in both directions** (Kruger & Dunning, 1999), so treat
+Q0's answer as a starting estimate, not a fact. Adjust on evidence and say that you're doing it.
 
-| Signal | Move |
+Every signal below is something you can actually observe in a message they sent. That constraint is
+deliberate: you cannot see hesitation, confusion, or silence — you see text, or the conversation
+ends. A rule keyed on something you cannot observe is a rule that never fires.
+
+| Observable signal | Move |
 |---|---|
-| Uses precise Android terms unprompted ("I'd rather use a bound service") | **Up.** Stop explaining that layer |
+| Uses a precise Android term unprompted ("I'd rather use a bound service") | **Up**, on Android. Stop explaining that layer |
 | Asks what a word you just used means | **Down one level**, for that domain only |
-| Answers a technical question with "whatever you think" repeatedly | **Down**, or they're just delegating — ask which |
 | Corrects you on an Android detail | **Up**, and take the correction seriously |
-| Pastes a stack trace or a logcat dump | **Up** on tooling at least |
-| Goes quiet after a dense message | **Down.** Silence after complexity is the clearest signal there is |
+| Pastes a stack trace, a logcat dump, or a build error | **Up** on tooling at least |
+| Answers two or more technical questions with "whatever you think" | **Down**, or they are delegating on purpose — ask which, in one line |
+| Replies to a message that introduced two or more new terms with agreement carrying no content — "ok", "sounds good", "makes sense" | **Down.** See below |
 
-That last row matters most. A novice rarely says "you lost me" — they go quiet, or agree with
-everything. **Treat sudden agreement with a complex message as a comprehension failure until proven
-otherwise**, and re-state it in plainer words without making it awkward.
+**That last row is the one that needs a procedure, not just a verdict.** Contentless agreement after
+a dense message is the cheapest signal you get and the easiest to read as success. Do not act on it
+by silently dropping a level and moving on. Re-state that message in one plain sentence, then ask
+one concrete question only someone who understood it could answer — *"so if we go that way, the app
+stops working on your old tablet. Is that tablet one you actually use?"* Their answer tells you
+which reading was right, and costs one exchange either way.
+
+**The arithmetic**, because "adjust on evidence" without it produces a level that oscillates every
+turn:
+
+- **One signal is a hypothesis.** Act on it for the next message only; do not rewrite the recorded
+  level.
+- **Two signals in the same direction, in the same domain, change the level** (§6) — and Android
+  fluency and programming fluency are separate domains that move independently (§4).
+- **Never move more than one level at a time**, and never move back within the same exchange. If you
+  are moving down and up on consecutive turns, the problem is the message length, not their level.
 
 Moving *up* is cheap and painless. Moving *down* needs care: re-explain the thing, don't announce
 that you've downgraded them.
@@ -154,28 +178,43 @@ between a plain-language session and a jargon-dense one is worse than either con
 
 ```markdown
 ## Who this is for
-Audience level: L3 (intermediate — programs confidently, new to Android).
+Audience level: L4 on programming, L2 on Android (§4 split).
 Explain Android-specific terms on first use; general programming terms are fine.
-Adjusted from L2 after session 3 — they were more comfortable than the intake suggested.
+Adjusted from L2/L2 after session 3 — corrected me on coroutine scoping twice.
+Vocabulary they've earned: minSdk, APK, emulator, R8.
+What they care about: monthly cost, works offline, no account.
 ```
 
 Include *why* it was set and any adjustment, so the next session inherits the evidence rather than
 just the verdict. This is the same discipline the skill applies to architecture decisions: record
 the reasoning, not only the conclusion.
 
+**The last two lines are the persona (§9), and they belong in this block for the same reason the
+level does.** Append to them whenever a term lands or a priority surfaces. A persona that lives only
+in this session's context is a persona the next session will not have — which is exactly the reset
+this section exists to prevent.
+
 ---
 
 ## 7 · Plain-language glossary
 
-Every term this skill uses, in one line each. **At L1–L2 use the right-hand column instead of the
-term; at L3–L4 use the term and give the plain version once, on first use.**
+Every term this skill uses, in one line each.
+
+**The naming rule, and it is the only one — §3 and §10 both defer to this.** At L1–L2, lead with the
+right-hand column and name the real term exactly once, in parentheses, the first time it comes up:
+*"how old a phone it runs on (`minSdk`)"*. After that, use the plain version. They will meet the
+term in an error message eventually, and meeting it there first is worse than meeting it here. At
+L3–L4, lead with the term and give the plain version once, on first use. At L5, use the term.
+
+**The right-hand column may not lean on another term from this glossary.** If a plain description
+needs one, expand it inline — otherwise the substitution just relocates the jargon.
 
 ### Things the user will actually see or hold
 
 | Term | Say instead |
 |---|---|
 | **APK** | The app file that gets installed on a phone |
-| **AAB** (Android App Bundle) | The package format the Play Store wants; it makes the right APK per device |
+| **AAB** (Android App Bundle) | The upload format the Play Store wants; it builds the right app file for each phone |
 | **Sideload** | Installing an app directly, without going through an app store |
 | **Emulator / AVD** (Android Virtual Device) | A simulated phone running on your computer |
 | **Real hardware / real device** | An actual physical phone, tablet or watch |
@@ -192,7 +231,7 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **`targetSdk`** | Which Android version's rules the app follows. **Not** a compatibility floor |
 | **`compileSdk`** | Which version's toolkit the app is built against. Invisible to users |
 | **ABI** | The chip type the app's low-level code is built for (most phones: `arm64-v8a`) |
-| **16 KB pages** | A newer memory layout; only matters if the app contains low-level native code |
+| **16 KB pages** | A newer memory layout; only matters if the app ships low-level native code — including native code inside a dependency or SDK, not just code you wrote |
 
 ### Build tooling
 
@@ -207,9 +246,9 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **Version catalog** | One file listing every version, so nothing drifts out of sync |
 | **`sdkmanager` / `avdmanager`** | Command-line tools that install Android pieces / create simulated phones |
 | **R8 / ProGuard / minify** | Shrinks and obfuscates the app for release |
-| **Keep rule** | An instruction telling the shrinker not to delete something it can't see is used |
+| **Keep rule** | An instruction telling the release-time size-reducer not to delete something it cannot see is being used |
 | **dex** | The compiled-code files inside an app package |
-| **Jetifier** | An obsolete compatibility shim. Its presence is now an error |
+| **Jetifier** | An obsolete compatibility shim for pre-AndroidX libraries; off by default and going away — if you find it switched on, turn it off |
 
 ### Running and debugging
 
@@ -220,7 +259,8 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **`aapt2` / `apksigner`** | Tools that inspect an app file / check its signature |
 | **Stack trace** | The error report showing where a crash happened |
 | **USB debugging** | A phone setting that lets your computer install and inspect apps |
-| **WHPX / AEHD / HAXM** | Windows features that make the emulator run at usable speed |
+| **WHPX** | The Windows feature that makes the emulator run at usable speed — the one to turn on |
+| **AEHD / HAXM** | Older emulator accelerators installed as drivers rather than Windows features; both are being retired, so move to WHPX |
 
 ### Architecture and code
 
@@ -250,13 +290,13 @@ term; at L3–L4 use the term and give the plain version once, on first use.**
 | **MASVS / MASTG** | An industry security checklist with stable numbered items |
 | **mDNS / NSD** | How apps find devices on the local network automatically |
 | **GPP** (Gradle Play Publisher) | A tool that uploads releases to the Play Store for you |
-| **Developer verification** | Google's new requirement to prove your identity to distribute apps |
+| **Developer verification** | Google's identity check for developers whose apps get installed on ordinary Android phones; rolling out by country. It does not affect putting your own app on your own phone over a cable |
 
 ---
 
 ## 8 · Toolchain setup by level
 
-**The important fact, and it is easy to miss inside a 440-line reference: almost none of
+**The important fact, and it is easy to miss inside a long reference: almost none of
 `windows-toolchain-and-emulators.md` is work for the user.** It is work for *you*. Only a handful of
 steps genuinely need a human, because they involve a download, a system dialog, a reboot, or
 physical hardware.
@@ -272,16 +312,10 @@ winget install GitHub.cli                           # only if publishing release
 android sdk install                                 # SDK pieces, no manual download
 ```
 
-**What actually needs the person:**
-
-1. **Approving the permission prompts** those commands raise — tell them it's coming first.
-2. **Enabling Windows Hypervisor Platform** — a Windows feature, not a package, so it needs an
-   elevated shell. Discover the feature name rather than guessing it
-   (`Get-WindowsOptionalFeature -Online`).
-3. **The reboot** after that. Nobody can reboot a machine for someone else.
-4. **Plugging in a phone and enabling USB debugging**, if testing on real hardware.
-
-Everything else — SDK packages, licences, emulators, builds, installs, launches, logs — is yours.
+**What actually needs the person** is a short, fixed list — approving prompts, elevation, a reboot,
+physical hardware, and anything spending their money or identity. It is stated once, with the
+reasoning, in §12. Everything else — SDK packages, licences, emulators, builds, installs, launches,
+logs — is yours.
 
 | Level | How to handle setup |
 |---|---|
@@ -325,10 +359,10 @@ Track these, and let each one move independently — they genuinely do:
 | **What they care about** | What they bring up unprompted — cost, privacy, speed, looks | Frames every recommendation you make |
 | **How they take bad news** | Their reaction the first time something breaks | Decides how you deliver the next failure |
 
-**"Vocabulary they've earned" is the one most often missed**, and it is the difference between a
-conversation that gets easier and one that stays flat. Keep an actual running list. When someone
-uses `minSdk` correctly after you explained it once, that word is theirs now — promote it and move
-on. A conversation where the shared vocabulary grows is one where the user is learning; a
+**"Vocabulary they've earned" is the dimension that decides whether the conversation gets easier or
+stays flat**, and it is the one with a place to live: the `Vocabulary they've earned:` line in the
+`CLAUDE.md` block from §6. When someone uses `minSdk` correctly after you explained it once, that
+word is theirs now — append it there and stop explaining it. A conversation where the shared vocabulary grows is one where the user is learning; a
 conversation where you re-explain the same term in week three tells them you haven't been paying
 attention.
 
@@ -385,10 +419,10 @@ Worked examples, using terms that actually come up in this skill:
 > same seal, or phones won't accept it as the same app. So it matters that we don't lose it — I'll
 > put it somewhere safe and tell you where."
 
-> **`minSdk` (how old a phone it runs on)** — "Every phone runs a version of Android, like a car
+> **How old a phone it runs on (`minSdk`)** — "Every phone runs a version of Android, like a car
 > model year. You're picking the oldest one you still want to support. Older means more people can
-> use it, but a bit more work for me. I'd go with 'anything from the last five years' unless you
-> have an old tablet you want this on."
+> use it, but a bit more work for me. I'd go with 'anything still in real use' — that's the floor
+> this skill starts from — unless you have an older tablet you want this on."
 
 > **Emulator** — "A pretend phone on your computer. I use it to try the app hundreds of times
 > without touching your actual phone. It's very good, but not perfect — near the end we'll try the
@@ -403,12 +437,10 @@ Worked examples, using terms that actually come up in this skill:
 - **The analogy has to actually hold.** A wrong analogy is worse than jargon, because it produces
   confident wrong expectations that surface three weeks later. If you can't find one that holds,
   describe the effect instead: *"it makes the app smaller before we ship it."*
-- **Never say "just", "simply", or "obviously".** These are the words that make someone stop asking
-  questions, and someone who stops asking stops catching your mistakes.
-- **One idea per message.** If you're on a second concept, split it — an L1 user reading three new
-  concepts retains none of them.
-- **Give the real term once, in parentheses, after the plain version.** They will meet it in an
-  error message eventually, and meeting it for the first time inside a stack trace is worse.
+- **Never say "just", "simply", or "obviously"** (§3).
+- **One idea per message.** If you're on a second concept, split it.
+- **Give the real term once, in parentheses, after the plain version** — the naming rule from §7,
+  which is where it is stated once and where the examples above follow it.
 - **Never simplify into something false.** "It depends" flattened into a confident wrong answer is
   *more* harmful here than at L5, because they cannot catch it. Say "the honest answer is it
   depends — here's how I'd decide" and then decide it.
@@ -442,7 +474,7 @@ first, so the panel argues over facts rather than recollection.
 
 | Convene a council | Just decide |
 |---|---|
-| Local-only storage vs cloud sync | Which colour the button is |
+| Local-only storage vs cloud sync | Which shade of the approved palette a button uses (the palette itself is Phase 1b's decision, not yours) |
 | On-device model vs cloud API (cost, privacy, offline) | Whether to use a version catalog (yes) |
 | How far back to support old phones, when they own an old device | Directory naming |
 | Whether this needs a backend at all | Anything the spec already settles |
@@ -562,8 +594,8 @@ manual download" is fine; leading with the manual download is not.
 
 ### What actually still needs a human
 
-After package managers, the list is short — and it is shorter than earlier drafts of this skill
-claimed:
+After package managers, the list of genuinely human steps is short. It is shorter than it feels
+while you are writing an install guide, which is why the default drifts toward handing over links:
 
 - **Anything needing elevation you can't obtain.** Enabling Windows Hypervisor Platform is a
   Windows *feature*, not a package: it needs an elevated shell. Don't guess the feature name —

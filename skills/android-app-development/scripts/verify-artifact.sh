@@ -34,12 +34,23 @@ done
 
 [ -n "$APK" ] || die "usage: verify-artifact.sh <apk> [--expect-abi ABI] [--expect-target N] [--release]"
 [ -f "$APK" ] || die "APK not found: $APK"
+case "$APK" in
+  *.aab) die "this reads APKs, not app bundles — \`bundletool build-apks\` first, or check the
+universal APK. A .aab cannot be inspected with aapt2 dump badging." ;;
+esac
 
 # aapt2 and apksigner live in build-tools; find them if not on PATH.
 find_tool() {
   local name="$1"
   command -v "$name" >/dev/null 2>&1 && { command -v "$name"; return; }
-  local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+  # No ANDROID_HOME: the default SDK location differs per platform, so try all three
+  # rather than assuming Linux and dying with a misleading "aapt2 not found".
+  local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+  if [ -z "$sdk" ]; then
+    for cand in "$HOME/Android/Sdk" "$HOME/Library/Android/sdk" "$HOME/AppData/Local/Android/Sdk"; do
+      [ -d "$cand" ] && { sdk="$cand"; break; }
+    done
+  fi
   ls -d "$sdk"/build-tools/*/ 2>/dev/null | sort -Vr | while read -r d; do
     for c in "$d$name" "$d$name.exe" "$d$name.bat"; do
       [ -x "$c" ] && { printf '%s' "$c"; return; }

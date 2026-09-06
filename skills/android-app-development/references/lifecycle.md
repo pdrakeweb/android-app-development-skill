@@ -7,12 +7,20 @@ scenarios written after the bugs had already been found by hand.
 
 ```
 0 Interview  →  1 Spec  →  1b Design  →  2 Plan  →  3 Implement  →  4 Test scenarios
-                                                          ↑              ↓
-                                                          └── 5 Audit & fix ──→  6 Beta  →  7 Handoff
+                                                          ↑              ↓ ↑
+                                                          └── 5 Audit & fix ┘ ──→  6 Beta  →  7 Handoff
+                                                                (findings become scenarios)
 ```
 
-Phases 3–5 loop. Phases 0–2 (including 1b) happen once, and re-opening them later is a deliberate
-act that gets written down, not a drift.
+Phases 3–5 loop. **Leave the loop for Phase 6 when all three hold:** the plan's "what is NOT built"
+section is empty or every remaining item is deferred in writing; a full Phase 4 run has zero FAILs;
+and Phase 5's gate is met. Re-enter at Phase 3 for a code fix and at Phase 4 for a new scenario —
+including every design-review P0/P1, which becomes a scenario rather than a note. **If a third
+consecutive audit turns up new Critical findings in the same subsystem, stop looping and raise it:**
+three rounds in one place means the defect is in the design, and another fix pass will not reach it.
+
+Phases 0–2 (including 1b) happen once, and re-opening them later is a deliberate act that gets
+written down, not a drift.
 
 ---
 
@@ -53,8 +61,8 @@ worked, in this order:
 6. **Background work** — what runs when the UI isn't up, what schedules it, what it must never do.
 7. **Data and permissions** — what's stored, where, and backup eligibility, plus a **permission
    table** with one row per restricted capability and these columns: the permission, **Essential or
-   Enhancing**, *why it is classified that way*, what the app does when it is denied, and where it is
-   requested (first-run flow or in context). The reasoning column is the one that stops the
+   Enhancing**, *why it is classified that way*, what the app does when it is denied, and which feature
+   the request fires from. The reasoning column is the one that stops the
    classification being re-litigated at the first denial bug (`permissions-storage-cloud.md`).
 8. **What this app must never do** — the verbatim list from the interview.
 9. **Needs a decision, not a guess** — every open question, unresolved, attributed to the user.
@@ -77,7 +85,7 @@ Companion artifacts, created here when the interview called for them:
 `docs/DESIGN_TOKENS.md` and any mockups are **Phase 1b's** artifacts, not this phase's — the spec
 says what the app is, design decides what it looks like.
 
-**Exit gate:** the user has read the spec and confirmed it — particularly §8 and §9.
+**Exit gate:** the user has confirmed the spec in a reply after it was presented to them — particularly §8 and §9.
 
 ---
 
@@ -86,8 +94,6 @@ says what the app is, design decides what it looks like.
 **Artifact:** `docs/DESIGN_TOKENS.md`, mockups, and a named design of record.
 **Reference:** `design-phase.md`.
 **Do not start:** the plan — build order depends on what is being built.
-
-Numbered `1b` rather than renumbered in, so every existing "Phase 4" reference stays correct.
 
 Design flows out of the spec and feeds the plan. Doing it after the plan means re-planning; doing it
 after implementation means the design review finds structural problems a mockup would have caught
@@ -106,11 +112,13 @@ for free.
 - **Assert contrast in a unit test** rather than reviewing it (`design-phase.md` §5). It is
   arithmetic; it runs on the JVM; it catches palettes and states nobody screenshotted.
 
-**Skip this phase** for a single-screen utility with stock Material 3 and no semantic colour — and
-say you are skipping it and why.
+**Skipping this phase** is reasonable for a single-screen utility with stock Material 3 and no
+semantic colour — but propose it and get a yes, don't announce it. This phase's gate is a user
+confirmation, so an agent that deletes the phase unilaterally has deleted the one gate standing
+between it and deciding how the app looks.
 
-**Exit gate:** a design of record the user has seen and confirmed, and `docs/DESIGN_TOKENS.md`
-written from it.
+**Exit gate:** a design of record the user has confirmed in a reply after seeing it, and
+`docs/DESIGN_TOKENS.md` written from it. A skip passes the gate only with the same explicit yes.
 
 ---
 
@@ -133,7 +141,7 @@ The spec says what; the plan says in what order, and what "done" means for each 
   the instruction survives into whichever session hits it.
 
 **Exit gate:** the user approves the plan before any implementation code is written. This is the
-single most valuable gate in the process — it is much cheaper to reorder a plan than a codebase.
+gate that earns its keep — it is much cheaper to reorder a plan than a codebase.
 
 ---
 
@@ -143,9 +151,14 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 
 - **Every pass ends with a real build and a real run on an emulator** — not "should work now".
   State it explicitly each time rather than assuming it's implied. **Run
-  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`**, which asserts on `Success`, launches, confirms a
-  live PID and the foreground activity, and checks the crash buffer — turning "I tested it" from a
-  claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
+  `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh <apk> <package>`** — this is where what it does is
+  written down, and the other references point here. It **clears the app's data first** (an empty
+  first install is the cheapest test of the no-value-from-nothing rule; pass `--keep-data` when that
+  matters), asserts on `Success` rather than trusting the exit code, clears the crash buffer before
+  launching, launches, confirms a live PID and the foreground activity, then reads the crash buffer
+  scoped to that PID — the buffer is system-wide, so an unscoped read fails good builds on an
+  unrelated vendor crash. Exit codes: 0 pass, 1 usage/env, 2 install, 3 launch, 4 crash. That turns
+  "I tested it" from a claim into an exit code. See `windows-toolchain-and-emulators.md` for the emulator mechanics and
   `bootstrapping.md` for the architecture defaults.
 - **Run `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
   produces configuration-time errors that never name the real cause, and an AGP 8-era scaffold does
@@ -161,7 +174,10 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 Keep `CLAUDE.md`, the plan's built/not-built sections, and any schema contract current as you go.
 A doc updated at the end of the session is a doc written from memory.
 
-**Exit gate:** the feature builds, installs, launches, and has been driven by hand at least once.
+**Exit gate:** `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` exits 0 for the built APK, and at
+least one Phase 4 scenario covering the new feature's primary path has run with a recorded PASS. If
+no such scenario exists yet, the pass is not finished — write it. "I clicked around and it seemed
+fine" is the thing Phase 4 exists to replace, and it is not a gate.
 
 ---
 
@@ -183,9 +199,9 @@ assuming a scenario fits:
 
 | Keep as an ADB test | Because |
 |---|---|
-| Runtime permission grant/deny | A Journey may auto-grant every permission, so the denial path is never exercised and the test passes for the wrong reason |
+| Runtime permission grant/deny | Journeys grant all app permissions by default, so the denial path is never exercised and the test passes for the wrong reason (`ecosystem.md` §3) |
 | Fault injection against a peer | Needs a scriptable way to make the peer refuse/hang/starve/vanish |
-| LAN / discovery / real-rig work | The emulator cannot do multicast or unsolicited inbound UDP at all |
+| LAN / discovery / real-rig work | *"The emulator does not support IGMP"*, so multicast discovery against real LAN hardware needs a device rig ([emulator networking](https://developer.android.com/studio/run/emulator-networking-address)). Outbound TCP and UDP work fine; inbound needs explicit redirection |
 | ARM verification, artifact shape | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`, not a UI flow |
 | Toolchain and build-config guards | Not a device behaviour |
 | Soak (fd/thread/memory before-after) | Needs process-level measurement |
@@ -249,8 +265,10 @@ to make the peer fail on demand (refuse, hang, starve, disappear) is what turns 
 untested claim into a test file. Assert against the app's own named constants (retry budgets,
 timeouts, backoff) so an expectation and the code can't drift apart silently.
 
-**Exit gate:** the suite runs end to end, and every result is PASS or an explicitly recorded
-BLOCKED/FAIL.
+**Exit gate:** every scenario has been executed and carries a recorded result; **zero results are
+FAIL**; every BLOCKED names the specific rig gap and the rig that would clear it; and no BLOCKED
+covers a capability the spec calls essential. A FAIL does not pass this gate by being written down —
+fix it, or move it to the Phase 5 findings list with a written acceptance and a reason.
 
 ---
 
@@ -282,7 +300,7 @@ with a reason.
 
 ## Phase 6 · Beta release
 
-- **Decide the distribution identity before building.** Intake Q10's answer now also determines
+- **Decide the distribution identity before building.** Intake Q10's answer also determines
   whether **developer verification** applies (`platform-currency.md` §6). ADB sideloading to your
   own device is unaffected; a **limited distribution account** — no ID, no fee, up to 20 devices —
   covers "a handful of named people"; Play means the `targetSdk` policy deadlines bind. Write down
@@ -317,7 +335,10 @@ with a reason.
   back to be sharper than anything the emulator surfaced. `testing-and-bugs.md` §4 has the report
   structure worth asking for.
 
-**Exit gate:** the build is installed on the real target device, launched, and exercised.
+**Exit gate:** the build is installed on the real target device, launched, and every scenario the
+spec calls essential has been run on it with a recorded result. If no real target device exists,
+Phase 6 is **BLOCKED** — recorded as such in the handoff, with the release explicitly marked as never
+having run on hardware. That is a state, not a pass; the same rig doctrine as Phase 4.
 
 ---
 
@@ -337,5 +358,8 @@ Written so a *different* session on a *different* machine could pick this up col
 - **Schema/migration contract**, if there's a database: export the schema and commit it, forbid the
   destructive migration fallback, and write down the rules that were learned the hard way.
 
-**Exit gate:** a cold session, given only the repo, can build, run, and test the app without asking
-a question that's already answered somewhere in it.
+**Exit gate:** dispatch a subagent with **no conversation context** and only the repo path,
+instructed to build the app, install it, and run the test suite using nothing but what is written in
+the repo, and to report every point where it had to guess. The gate is met when that list is empty.
+The session that wrote the docs cannot judge this by reading them — it cannot un-know the project —
+so use the zero-context pattern the skill already ships (`subagent-delegation.md` Pattern A).

@@ -25,8 +25,8 @@ Don't ask for "a code review." Ask for an adversarial audit against a named list
 - **Architecture anti-patterns** — business logic in Activity/Fragment/Composable, God classes (>500 lines), missing loading/error/success states, hardcoded user-facing strings.
 - **Security** — secrets logged or hardcoded, cleartext traffic, exported components without permission checks, WebView JS on untrusted URLs, injectable queries (FTS `MATCH` is a common blind spot).
 - **Broken functionality** — dead feature flags, race conditions on shared mutable state, infinite retry loops, silently-dropped network errors, missing null checks on backend fields that are sometimes omitted.
-- **Dead controls, especially permission-shaped ones** — a control that is hidden, disabled without explanation, or visibly live but does nothing. Denial is the most common way one appears: the control looks fine and the permission behind it is gone. Check every enhancing permission against the four-part degradation contract, and check that an inline retry branches on permanent denial rather than calling `launch()` into a prompt that will never appear (`permissions-storage-cloud.md`). A permission classified essential purely for coding convenience is itself a finding.
-- **Android API misuse** — deprecated APIs, missing runtime permission requests (declaring in the manifest is not enough on API 33+), missing notification channels, `FileUriExposedException`, wrong `FLAG_ACTIVITY_*` use.
+- **Dead controls, especially permission-shaped ones** — a control that is hidden, disabled without explanation, or visibly live but does nothing. Denial is the most common way one appears: the control looks fine and the permission behind it is gone. Check every enhancing permission against the four-part degradation contract, and check that an inline retry branches on permanent denial rather than calling `launch()` into a prompt that will never appear (`permissions-storage-cloud.md`). A permission classified essential purely for coding convenience is itself a finding, as is any request that fires at app startup instead of from the feature that needs it.
+- **Android API misuse** — deprecated APIs, missing runtime permission requests (declaring a dangerous permission in the manifest has not been enough since **API 23**), missing notification channels, `FileUriExposedException`, wrong `FLAG_ACTIVITY_*` use.
 - **Build/dependency issues** — version conflicts, missing R8/ProGuard keep rules for reflection/serialization, debug code leaking into release, wrong minSdk assumptions.
 - **Platform-currency breakage** — the API 36 behaviours in `platform-currency.md` §4, which produce defects that look like ordinary bugs: an `onBackPressed()` override that is never called (so an unsaved-work guard is silently gone), content drawing under the system bars because insets aren't handled, a portrait-locked layout handed a landscape tablet window. Treat a surviving `onBackPressed()` at `targetSdk` 36 as **High** — it is a guard that fails open and silently, which is this corpus's defining failure mode.
 
@@ -89,7 +89,8 @@ worth keeping:
   (with what remains), or left plain when open. A review where every finding still reads as open
   is one nobody can act on six weeks later, and re-auditing to find out is the expensive path.
 - **Include a "what's already done well, so it isn't 'fixed' away later" section.** This is the
-  highest-leverage part of a review document and the easiest to skip. Deliberate decisions that
+  part of a review document most often skipped, and the one that stops the same false positive
+  being re-filed every audit. Deliberate decisions that
   look like defects — a baked-in credential in a personal build, a hand-rolled parser that exists
   because the library version was wrong, manual entry kept on purpose because it trains a model —
   get "corrected" by the next well-meaning agent unless the review says explicitly that they are
@@ -102,7 +103,7 @@ worth keeping:
 
 **Journeys are the default for feature-behaviour scenarios.** The Markdown ADB format below stays the format for what Journeys cannot express — and that list is real, not a hedge:
 
-- **runtime-permission grant/deny states**, because a Journey may auto-grant all app permissions, which silently defeats exactly the test you were writing (see the caveat in `ecosystem.md` §3). Keep these as ADB tests, where `pm revoke` / `pm clear` puts grant state under your control. **A deny-everything scenario is required for any app declaring a runtime permission** — and test the permanently-denied state too, since it behaves differently and is where a naive inline retry becomes a dead control (`permissions-storage-cloud.md`).
+- **runtime-permission grant/deny states**, because Journeys grant all app permissions by default and silently defeat exactly the test you were writing (`ecosystem.md` §3 states the limit and what to do about it). **A deny-everything scenario is required for any app declaring a runtime permission**, covering all three not-granted states — never-asked, denied-once, permanently-denied — because the gap between the first and the third is where an inline retry becomes a dead control (`permissions-storage-cloud.md`).
 - fault injection against an external peer — refuse, hang, starve, disappear;
 - LAN rig work, and anything needing a real device on real Wi-Fi (§7 of the toolchain reference);
 - ARM-target verification and artifact-shape checks — `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`;
@@ -111,21 +112,16 @@ worth keeping:
 
 Both formats feed the same gate: every scenario ends PASS, FAIL, or BLOCKED.
 
-For a device-testing pass that needs to be reproducible by someone else (or by a future subagent), write it as numbered, independently-runnable files, each with this shape:
-
-```
-### N.M <short title>
-- Preconditions: <what must already be true/done>
-- Steps: <numbered shell commands, adb-based>
-- Expected: <what should happen, described concretely>
-- Verify: <exactly what in the command output/screenshot confirms it>
-- Pass/Fail: PASS if <condition>. FAIL if <condition, with likely cause>.
-```
+For a device-testing pass that needs to be reproducible by someone else (or by a future subagent),
+write it as numbered, independently-runnable files. **The scenario block is defined once, in
+`lifecycle.md` Phase 4 — use it verbatim.** It carries a `BLOCKED if` line that this phase's exit
+gate and the rig doctrine both depend on; a scenario written without one cannot record the state the
+gate asks for.
 
 Practical notes pulled from a working test plan:
 - Export the tool paths once at the top of the harness (`ADB=...`, `APK=...`, `PKG=...`) so every step is copy-pasteable without re-deriving paths.
 - Distinguish "FAIL" from "BLOCKED" (e.g. a step needing hardware that isn't present) — don't let environment gaps masquerade as app defects.
-- A no-crash check is its own explicit test, not an assumption: `adb logcat -d -v time | grep -iE 'AndroidRuntime|FATAL EXCEPTION|beginning of crash'` should print nothing, and `adb shell pidof <pkg>` should print a PID. **`${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` does all of this** — install asserting on `Success`, clear the crash buffer *before* launching so a previous run's crash can't be misread as this one's, launch, confirm a live PID, check the foreground activity, and assert the crash buffer is empty. Prefer running it to re-deriving the sequence by hand.
+- A no-crash check is its own explicit test, not an assumption. **Run `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` rather than re-deriving the sequence by hand** — it exits non-zero on each distinct failure, and `lifecycle.md` Phase 3 describes exactly what it does, including the data wipe it performs by default. Two things worth knowing before hand-rolling any substitute: the crash buffer is system-wide, so an unscoped read fails good builds on someone else's crash, and it must be cleared *before* launch or a previous run's crash reads as this one's.
 - **Deriving tap coordinates from a UI dump is the most fragile part of this harness.** Before writing one, consider `android layout` / `android screen resolve` from the Android CLI, or an MCP device-control server — `ecosystem.md` §4 ranks the options.
 - For emulator work broadly, the recurring instruction is simply: *"Use the android simulator that we've used for our other android apps to run the apk"* — i.e., standardize on one emulator/AVD across projects rather than reconfiguring per-app, and *"After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature and function"* as the closing step of every implementation pass.
 
@@ -168,4 +164,4 @@ Two of those are no longer stylistic at `targetSdk` 36 and should be graded **P0
 
 ## What's deliberately not in here
 
-The ADB test-harness format in section 3 was originally developed on a project that also involved decompiling and modifying a third-party commercial app. Those techniques — defeating another vendor's licensing, DRM, or pairing checks — are **deliberately excluded** from this skill. They are IP circumvention aimed at someone else's software, not a generalizable way to build your own Android app, and nothing here should be read as a template for them. What was worth keeping is the harness structure itself, which is entirely independent of that context.
+**Out of scope:** techniques for defeating another vendor's licensing, DRM, or pairing checks. That is IP circumvention aimed at someone else's software, not a way to build your own Android app, and nothing here should be read as a template for it. The harness structure above is entirely independent of any of that.

@@ -20,12 +20,36 @@ When it disagrees with anything written here, it wins.
 ## 1 · Android CLI, the default toolchain path
 
 `android` is Google's official command-line entry point for agent-driven Android work. It replaces
-most of what `windows-toolchain-and-emulators.md` does by hand. Google reports it cuts agent token
-usage by >70% and completes tasks ~3x faster than an agent driving Android Studio.
+most of what `windows-toolchain-and-emulators.md` does by hand. Google reports it *"improved project
+and environment setup by reducing LLM token usage by more than 70%, and tasks were completed 3X
+faster than when agents attempted to navigate these tasks using only the standard toolsets"*
+(<https://developer.android.com/tools/agents/android-cli>) — a setup-scoped claim, not a general
+speedup.
+
+**Install it first; nothing below works without it.** Check with `command -v android`, then, per
+Google's own `devtools/android-cli` skill:
+
+```bash
+# Linux
+curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/install.sh | bash
+# macOS (Apple silicon)
+curl -fsSL https://dl.google.com/android/cli/latest/darwin_arm64/install.sh | bash
+# macOS (Intel)
+curl -fsSL https://dl.google.com/android/cli/latest/darwin_x86_64/install.sh | bash
+```
+
+On **Windows the download does not work from PowerShell** — run this from `cmd.exe`:
+
+```
+curl -fsSL https://dl.google.com/android/cli/latest/windows_x86_64/install.cmd -o "%TEMP%\i.cmd" && "%TEMP%\i.cmd"
+```
+
+Then `android update` to move to the latest, and `android init` to install the skill that teaches an
+agent to drive it.
 
 | Command | Does |
 |---|---|
-| `android sdk install` / `list` / `update` | Component-level SDK installs — no Android Studio |
+| `android sdk install <package>[@<version>]` | Component-level SDK installs — no Android Studio. It takes package arguments; there is no bare form |
 | `android create` | Scaffold a project from an official template |
 | `android emulator` | Create, list, start, stop AVDs |
 | `android run` | Build and deploy to a device or emulator |
@@ -42,7 +66,7 @@ them where available.
 ### Windows: a real limitation, verified
 
 **`android emulator` is disabled on Windows**, and downloading the CLI from PowerShell is not
-supported. This was an open question worth settling, and the answer is no.
+supported.
 
 So on Windows, split the work:
 
@@ -81,22 +105,27 @@ android skills add --all            # everything, for every detected agent
 **Install at the phase that needs it, not all at once** — an invoked skill's body competes for the
 same context budget as this one.
 
+Entries below are **repo paths**, which is how the skills are identified in the marketplace
+manifest. `android skills add` takes the skill id — check `android skills list` for the exact
+argument rather than assuming the path works verbatim.
+
 | Phase / situation | Google skill | Fills |
 |---|---|---|
 | 2–3 · Scaffold, or an AGP 8→9 migration | `build-system/agp/agp-9-upgrade` | The AGP 9 break (`platform-currency.md` §3). **The single most valuable one to install.** |
 | 2–3 · Architecture defaults | `navigation/navigation-3` | Navigation choice at scaffold time |
 | 3 · Any UI at all, targeting API 36 | `system/edge-to-edge` | Now mandatory (`platform-currency.md` §4) |
-| 3 · Compose work that is *not* routine | `jetpack-compose` | Deliberately excludes basics |
+| 3 · Migrating XML views to Compose | `jetpack-compose/migration/migrate-xml-views-to-jetpack-compose` | The migration path; there is no general "Compose basics" skill |
 | **1b · Generating or changing the theme** | `jetpack-compose/theming/styles` | Current theming APIs — install for the design phase (`design-phase.md` §4) |
-| **1b/3 · Any multi-form-factor layout** | `jetpack-compose/adaptive` | `WindowSizeClass` and adaptive layout. Most P0s in the corpus's design review were adaptive-layout failures |
+| **1b/3 · Any multi-form-factor layout** | `jetpack-compose/adaptive` | `WindowSizeClass` and adaptive layout. Adaptive-layout failures are the defect class this phase's review surfaces most reliably |
 | 4 · Test setup | `testing/testing-setup` | Wiring the suite (`testing-and-bugs.md`) |
 | 5 · Release-quality audit | `performance/r8-analyzer` | R8/keep-rule analysis — **no equivalent here** |
 | 5 · Performance findings | `profilers/android-profiler` | Profiling — **no equivalent here** |
 | 5 · Security audit | `security/android-intent-security` | Intent surface (`permissions-storage-cloud.md`) |
-| 6 · Beta release | `play` | Play submission mechanics |
+| 6 · Pre-submission policy check | `play/play-policy-insights` | Policy findings before you submit. **No Google skill covers submission mechanics** — that is `lifecycle.md` Phase 6 |
+| Billing, or Play's Engage surface | `play/play-billing-library-version-upgrade`, `play/engage-sdk-integration` | Only if the app uses them |
 | Wear OS work | `wear/wear-compose-m3` | The `vitals-watch` domain |
 | On-device AI / system agents | `device-ai/appfunctions` | The `field-assistant` domain |
-| Camera / media / identity / TV / XR | `camera/camerax`, `media/media3-cast-integration`, `identity`, `tv/leanback-to-compose-tv-migration`, `xr/display-glasses-with-jetpack-compose-glimmer` | Domains this skill doesn't cover |
+| Camera / media / identity / TV / XR | `camera/camerax`, `media/media3-cast-integration`, `identity/restore-credentials`, `identity/verified-email`, `tv/leanback-to-compose-tv-migration`, `xr/display-glasses-with-jetpack-compose-glimmer` | Domains this skill doesn't cover |
 | Driving the CLI itself | `devtools/android-cli` | Installed by `android init` |
 
 Two adjacent sets worth knowing: **`Kotlin/kotlin-agent-skills`** (JetBrains' official Kotlin
@@ -140,12 +169,15 @@ Run with `./gradlew journeysTest`.
 - **Journeys need the device to themselves.** The plugin serialises execution within and across
   builds (10-minute queue timeout) because two agents tapping at once on one screen is nonsense. It
   assumes a single attached device; set `ANDROID_SERIAL` per invocation for more.
-- **Permissions may be granted automatically.** Studio's Journeys grant all app permissions by
-  default when testing a journey. That **silently defeats every runtime-permission test case** —
-  which is the single most-repeated bug class in this corpus
-  (`permissions-storage-cloud.md`). Verify the behaviour of whichever executor you use, and if
-  permissions are auto-granted, **keep the permission-denial scenarios as ADB tests**, where you
-  control grant state with `pm revoke` / `pm clear`.
+- **Permissions are granted automatically — this is documented behaviour, not a possibility.**
+  Studio's Journeys grant all app permissions by default when testing a journey
+  (<https://developer.android.com/studio/gemini/journeys>). That **silently defeats every
+  runtime-permission test case**: the denial path is never exercised and the scenario passes for the
+  wrong reason. **This is the canonical statement of the limit** — `lifecycle.md` Phase 4 and
+  `testing-and-bugs.md` §3 both defer here. So keep every permission scenario as an ADB test, where
+  `pm revoke` / `pm clear` put grant state under your control, and cover all three not-granted
+  states rather than one: never-asked, denied-once, permanently-denied
+  (`permissions-storage-cloud.md`). Verify the behaviour of any other executor before trusting it.
 
 ### So which format?
 

@@ -1,6 +1,6 @@
 {
   "name": "android-app-development",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A guided, gated workflow for building native Android apps with Claude Code: intake interview, spec, an approved plan before any code, an adversarial audit, an agent-executable test suite, and a beta release.",
   "author": {
     "name": "pdrakeweb"

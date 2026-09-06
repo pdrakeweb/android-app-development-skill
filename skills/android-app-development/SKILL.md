@@ -1,6 +1,6 @@
 ---
 name: android-app-development
-version: 0.3.0
+version: 0.4.0
 description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
 license: Apache-2.0
 compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
@@ -9,7 +9,7 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/preflight.sh *), Bash(${CLAUDE_S
 
 # Android App Development (Claude Code)
 
-This skill encodes the workflow that has actually shipped working Android apps — not generic Android advice. It is opinionated because the source material was opinionated: every pattern here comes from a session that produced a working APK, a merged fix, or a documented finding.
+This skill encodes the workflow that has actually shipped working Android apps — not generic Android advice. It is opinionated: every pattern here comes from a session that produced a working APK, a merged fix, or a documented finding.
 
 It is a **process spine**, and it is deliberately not an Android API reference. Google ships official, maintained agent skills for the API-level ground truth that goes stale in ninety days — install those and defer to them (`references/ecosystem.md`). When one of them disagrees with something written here, it wins.
 
@@ -29,7 +29,7 @@ Where a lesson came from somewhere else, it's described rather than named.
 
 **When the request is "build me an Android app" — or anything that amounts to starting a new app — do not scaffold, do not choose dependencies, and do not write code. Run the intake interview first** (`references/intake-interview.md`), then follow the phases in `references/lifecycle.md`.
 
-The interview is ten broad-to-narrow questions asked in batches of 2–4, followed by dynamically generated follow-ups driven by the answers. It exists because every question in it traces back to something that was built wrong, audited as a defect when it was actually a deliberate decision, or discovered halfway through implementation when it should have been decided in the first ten minutes.
+The interview opens with a calibration question asked on its own, then works through up to ten broad-to-narrow questions in batches of 2–4 — fewer at novice levels — plus two closing questions asked every time and follow-ups generated from the answers. It exists because every question in it traces back to something that was built wrong, audited as a defect when it was actually a deliberate decision, or discovered halfway through implementation when it should have been decided in the first ten minutes.
 
 The phases, each with an artifact and an exit gate:
 
@@ -39,13 +39,13 @@ The phases, each with an artifact and an exit gate:
 | 1 · Spec | `docs/APP_SPEC.md` (+ ADRs, `CLAUDE.md`) | user has read and confirmed it |
 | 1b · Design | `docs/DESIGN_TOKENS.md`, mockups, a named design of record | user has seen and confirmed the design |
 | 2 · Plan | `docs/IMPLEMENTATION_PLAN.md` | **user approves before any code** |
-| 3 · Implement | working code + updated docs | builds, installs, launches, driven by hand |
-| 4 · Test scenarios | `*.journey.xml` and/or `tests/NN-*.md` | suite runs end to end, every result PASS/FAIL/BLOCKED |
-| 5 · Audit & fix | audit report + scoped fix agents | no unresolved Critical/High |
-| 6 · Beta release | signed release build, published | installed and exercised on real hardware |
-| 7 · Handoff | `CLAUDE.md`, `EMULATOR.md`, `DEBUGGING.md`, revisions log | a cold session can build and test it |
+| 3 · Implement | working code + updated docs | `verify-install.sh` exits 0, and a scenario covers the new path |
+| 4 · Test scenarios | `tests/README.md` (the shared harness, written first) + `*.journey.xml` and/or `tests/NN-*.md` | every scenario run, **zero FAILs**, every BLOCKED naming its rig gap |
+| 5 · Audit & fix | `audit/AUDIT_REPORT.md`, every finding marked Fixed / Accepted | no unresolved Critical/High, or each accepted in writing with a reason |
+| 6 · Beta release | signed release build, published | essential scenarios run on real hardware — or BLOCKED, recorded as such |
+| 7 · Handoff | `CLAUDE.md`, `EMULATOR.md`, `DEBUGGING.md`, revisions log | a zero-context subagent builds and tests it with nothing left to guess |
 
-Phases 3–5 loop. Phases 0–2 (including 1b) happen once; re-opening one later is a deliberate act that gets written down, not a drift.
+Phases 3–5 loop; `lifecycle.md` states the exit condition and when to stop looping and escalate. Phases 0–2 (including 1b) happen once; re-opening one later is a deliberate act that gets written down, not a drift.
 
 ## Before you scaffold: the version pins
 
@@ -57,7 +57,8 @@ A cold session working from training data will scaffold a project that does not 
 | Gradle | **9.6.0** (AGP 9.4's minimum — 9.1 is not enough) |
 | JDK | **17** |
 | SDK Build Tools | **36.0.0** |
-| compileSdk / targetSdk | **36 / 36** — *not* 37; API 37 (Android 17) is still beta |
+| compileSdk | **37** — Android 17 is stable; track the newest stable SDK |
+| targetSdk | **36** — what Play requires; moves only when tested |
 | minSdk | **28** (corpus floor) |
 | Wear OS / Automotive targetSdk | **35** · TV / XR: **34** |
 
@@ -70,8 +71,8 @@ for either number — ask how old a phone it must work on (`intake-interview.md`
 
 Three consequences that bite immediately, all detailed in `platform-currency.md`:
 
-- **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, non-final resource IDs by default, `android.enableJetifier` now a build error. Install Google's `agp-9-upgrade` skill rather than hand-writing this.
-- **targetSdk 36 has been required by Play since 2026-08-31.** Edge-to-edge can no longer be opted out of, and predictive back is on by default — so `onBackPressed()` is never called, which silently deletes any unsaved-work guard built on it.
+- **AGP 9 is a hard break, not a bump.** Built-in Kotlin (you no longer apply the Kotlin Android plugin), the old variant API removed, and `kapt` incompatible with built-in Kotlin — which this skill's Hilt default walks straight into, so move to KSP. Install Google's `agp-9-upgrade` skill rather than hand-writing this.
+- **targetSdk 36 has been required by Play since 2026-08-31** — with an extension available and a different rule for existing apps, both in `platform-currency.md` §5, which owns every deadline in this skill. At 36, edge-to-edge can no longer be opted out of, and predictive back is on by default — so `onBackPressed()` is never called on Android 16+, which silently deletes any unsaved-work guard built on it.
 - **If this date is more than a month or two old, re-verify before scaffolding.** `platform-currency.md` §2 says how, in three steps.
 
 ## When to use which reference
@@ -92,18 +93,18 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 
 ## House rules worth stating explicitly
 
-These showed up often enough, across independent projects, that they're clearly deliberate defaults rather than one-off asks:
+House rules that apply to every project:
 
-- **Personal, non-distributed APKs bake in live credentials on purpose.** This is a documented exception, not an oversight an audit should keep re-flagging — but confirm this framing explicitly with whoever's asking before assuming it, since it does NOT apply to anything that will be distributed, shared, or published (see `permissions-storage-cloud.md` for the boundary and what still needs protecting even in a personal build). Note that distribution now also implies a **developer-verification** question — `platform-currency.md` §6.
+- **Personal, non-distributed APKs bake in live credentials on purpose.** This is a documented exception, not an oversight an audit should keep re-flagging — but confirm this framing explicitly with whoever's asking before assuming it, since it does NOT apply to anything that will be distributed, shared, or published (see `permissions-storage-cloud.md` for the boundary and what still needs protecting even in a personal build). Distribution also raises a **developer-verification** question — `platform-currency.md` §6.
 - **A safety- or correctness-critical invariant, once established, gets checked by name in every subsequent audit prompt.** (Example from `field-assistant`: "emergency content renders verbatim, never through the LLM" appears in nearly every audit and fix-agent prompt for that app, worded identically each time.) If your app has an analogous non-negotiable rule, name it explicitly and repeat it verbatim across prompts rather than trusting it to be inferred.
 - **A button, action, or field that does nothing with no explanation is treated as the worst failure mode**, worse than an error message. Every "why didn't this work" bug report in the corpus traces back to a silent no-op somewhere. Default to failing loudly.
-- **A denied permission degrades a feature; it never produces a dead control.** Classify every permission essential or enhancing — enhancing is the default and most apps have zero essential ones — then make denial leave the workflow completing, say plainly what is missing, and offer an inline retry that still works after the prompt is permanently spent. This is the previous rule's most common cause: the control is right there, it looks live, and the permission behind it is gone (`permissions-storage-cloud.md`).
+- **A denied permission degrades a feature; it never produces a dead control.** Classify every permission essential or enhancing — enhancing is the default and the burden of proof is on calling anything essential — request it from the feature that needs it rather than at startup, then make denial leave the workflow completing, say plainly what is missing, and offer an inline retry that still works after the prompt is permanently spent. It is the readiest way an app grows one: the control is right there, it looks live, and the permission behind it is gone (`permissions-storage-cloud.md`).
 - **Fail closed, and never weaken a guard to make something compile.** Every guard in the corpus exists because the alternative failed *open* and silently. When a value can't be computed, say so — never return the safe-looking one.
 - **A value computed from nothing is never displayed as a finding.** Empty states say they're empty. An empty first install is the cheapest possible test of this, and it has caught fabricated numbers twice.
 - **Every implementation pass ends with a real build and a real test**, not "should work now." "After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature" is a recurring, explicit instruction — say it every time rather than assuming it's implied. `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` makes the check deterministic instead of a claim.
 - **When a fix needs a judgement rather than a correction, stop and ask.** Several numbers in these codebases look like implementation details and are actually domain judgements; guessing produces a plausible-looking app that is wrong in a way nobody notices for months.
 - **Every silent failure that gets fixed gets a regression test.** A silent failure that regresses is invisible again.
-- **Match the register to the person, and establish it before anything else.** Ask the audience-level question first (`user-calibration.md`), then tune every question, explanation and error message to the answer. At novice levels *ask fewer questions and decide more*, stating plainly what you picked — asking someone to choose a navigation library when they cannot evaluate the options is abdication, not consultation. Going quiet after a dense message is the clearest comprehension signal there is; treat sudden agreement with something complicated as a failure to land until proven otherwise.
+- **Match the register to the person, and establish it before anything else.** Ask the audience-level question first (`user-calibration.md`), then tune every question, explanation and error message to the answer. At novice levels *ask fewer questions and decide more*, stating plainly what you picked — asking someone to choose a navigation library when they cannot evaluate the options is abdication, not consultation. Re-calibrate on what they actually send, not on how they described themselves: agreement carrying no content after a message that introduced two or more new terms is the signal to re-state and check, not to move on.
 - **Build a working model of the person, then research harder the less they can check you.** The level from Q0 is scaffolding; keep refining it from what they say, skip, and repeat, and never show them the label. At novice levels explain ELI5 — no assumed background, which is not talking down — and for anything expensive to reverse, convene the **`council`** skill if installed rather than picking unilaterally, reporting decision / reason / honest cost / confidence / what would flip it. The inversion is deliberate: an expert can overrule a lazy recommendation, a novice will live with it for the life of the app.
 - **Explain, propose, act — never hand someone a download page.** Anything a package manager can install, install: say what it buys them, name the tool, warn that a permission prompt is coming, then run it and verify. `winget install Git.Git` beats "go download Git", and the only genuinely human steps left are approving prompts, elevation, a reboot, physical hardware, and anything spending their money or identity. The explanation compresses with the audience level; the warning that a prompt is coming never drops, and neither does stating what a destructive action costs (`user-calibration.md` §12).
 - **A finding cites the page it came from.** An audit finding with a link to an official doc survives disagreement; one without gets argued about, or silently reverted by the next well-meaning agent.
@@ -115,5 +116,5 @@ Prose instructions get skipped on turn forty. These do not — run them instead 
 | Script | Answers |
 |---|---|
 | `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
-| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? |
-| `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release artifact carry the right ABIs, targetSdk, and a v2+ signature? |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? **Wipes the app's data first** — pass `--keep-data` when that matters (`lifecycle.md` Phase 3) |
+| `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release APK carry a v2+ signature, and the ABIs and targetSdk you expected? The signature check is unconditional; ABI and targetSdk are only *asserted* when you pass `--expect-abi` / `--expect-target`, and only reported otherwise. It reads APKs, not `.aab` bundles |

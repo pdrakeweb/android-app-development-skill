@@ -123,8 +123,8 @@ spacing and type scale — that will otherwise be re-litigated at implementation
 ### Converge and name the design of record
 
 Pick one, state what it borrowed from the others, then write the decision down. **State explicitly
-which artifact wins when the mockup and the spec text disagree** — this is the single most common
-source of "the app doesn't match the design" later. Record it in the spec, and open an ADR if the
+which artifact wins when the mockup and the spec text disagree** — unresolved, that ambiguity
+resurfaces as "the app doesn't match the design" once there is code to compare against. Record it in the spec, and open an ADR if the
 choice constrains the architecture (a kiosk layout, a locked orientation, a custom control surface).
 
 Then update `DESIGN_TOKENS.md` from the winner. Mockups are throwaway; the token file is not.
@@ -178,10 +178,20 @@ rather than arguing about it in a review.
 Compute the WCAG relative-luminance ratio for **every foreground/background pairing the app
 actually draws**, per palette, and fail the build below threshold:
 
-| | Body text | Large text and icons |
-|---|---|---|
-| **AA** | 4.5:1 | 3:1 |
-| **AAA** | 7:1 | 4.5:1 |
+| | Body text | Large text | Icons, controls, focus rings |
+|---|---|---|---|
+| **AA** | 4.5:1 | 3:1 | 3:1 |
+| **AAA** | 7:1 | 4.5:1 | *no AAA tier exists — 3:1 stays the bar* |
+
+Text thresholds are WCAG 2.2 SC 1.4.3
+(<https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum>) and 1.4.6
+(<https://www.w3.org/WAI/WCAG22/Understanding/contrast-enhanced>); "large" means 18pt, or 14pt bold.
+**Icons and controls are a different criterion with no enhanced tier** — SC 1.4.11 Non-text Contrast
+(<https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast>) asks 3:1 of every UI component and
+meaningful graphic against what sits next to it, regardless of size. Folding icons into the
+large-text column invents an AAA icon rule that does not exist and hides the 3:1 obligation on
+controls that are neither large nor text. Android's guidance names the AA text pair only, in `sp`
+rather than points (<https://developer.android.com/guide/topics/ui/accessibility/apps>).
 
 Hold a high-contrast palette to **AAA**, not AA. The corpus's reasoning is worth keeping: in an
 office the only cost of raising contrast is raising contrast; on a device used in bright sun or in

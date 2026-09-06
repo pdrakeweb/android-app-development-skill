@@ -14,7 +14,7 @@ whole process to avoid and the most expensive to debug after the fact.
 
 The two things most likely to be wrong out of memory: **AGP 9 no longer applies the Kotlin Android
 plugin** (Kotlin is built in, and the old plugin is incompatible with the new DSL), and **Gradle
-9.6.0 is the minimum**, not 9.1. Install Google's `agp-9-upgrade` skill (`ecosystem.md` §2) and let
+9.6.0 is the minimum**. Install Google's `agp-9-upgrade` skill (`ecosystem.md` §2) and let
 it own the details.
 
 ### Prefer `android create` over a hand-written scaffold
@@ -25,6 +25,7 @@ Google's Android CLI generates from official, maintained templates:
 android sdk install          # component-level, no Android Studio needed
 android create               # scaffold from an official template
 android init                 # install the android-cli skill so agents can drive it
+#                              (the CLI itself: `ecosystem.md` §1 — install it before any of this)
 ```
 
 This is strictly better than reconstructing a `build.gradle.kts` from memory, because the template

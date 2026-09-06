@@ -61,17 +61,18 @@ fault:
 
 ## 0 · Try Android CLI first
 
-Most of §1 is now automatable. Google's **Android CLI** installs the SDK component-by-component,
-scaffolds projects, deploys, and manages AVDs — see `ecosystem.md` §1.
+Most of §1 is automatable. Google's **Android CLI** installs the SDK component-by-component,
+scaffolds projects, deploys, and manages AVDs — install it first (`ecosystem.md` §1), then:
 
 ```bash
-android sdk install
+android sdk install platforms/android-37 build-tools/36.0.0   # takes package arguments
 android create
 android run
 ```
 
-**On Windows there is a verified, load-bearing exception: `android emulator` is disabled, and
-downloading the CLI from PowerShell is not supported.** So on Windows the split is:
+**On Windows two limitations shape the whole approach: `android emulator` is disabled, and
+downloading the CLI from PowerShell is not supported** — the install runs from `cmd.exe`
+(`ecosystem.md` §1). So on Windows the split is:
 
 | Job | Use |
 |---|---|
@@ -80,9 +81,8 @@ downloading the CLI from PowerShell is not supported.** So on Windows the split 
 
 On macOS and Linux, `android emulator` covers the AVD half too and §3 becomes a fallback.
 
-**Everything below therefore remains current on Windows.** It is not legacy — it is the supported
-path for the emulator half of the job, and the §6–§7 gotchas apply no matter which tool created
-the AVD.
+The manual path below is the supported route for the emulator half of the job on Windows, and the
+§6–§7 gotchas apply no matter which tool created the AVD.
 
 ---
 
@@ -109,7 +109,7 @@ winget install EclipseAdoptium.Temurin.17.JDK
 Falls back to <https://adoptium.net/temurin/releases/?version=17> (Windows x64 `.msi`) only if
 `winget` isn't on the machine — check with `winget --version` before promising it.
 
-Known good: 17.0.19.
+A 17.0.x build is what these instructions assume.
 
 ### 1.2 Git for Windows
 
@@ -197,7 +197,7 @@ AVDM="$SDK/cmdline-tools/latest/bin/avdmanager.bat"
 EMU="$SDK/emulator/emulator.exe"
 ```
 
-Known-good baseline on the machine this was written from: adb 1.0.41, emulator 36.5.11.0,
+A working baseline for comparison: adb 1.0.41, emulator 36.5.11.0,
 JDK 17.0.19. **Gradle and AGP are not pinned here** — they belong to the project's version catalog,
 and the current values live in `platform-currency.md` §1 (as of 2026-09-04: AGP 9.4.0 on Gradle
 9.6.0). `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` checks this machine against them.
@@ -265,7 +265,7 @@ standard phone stand-in with no skin or density tuning needed.
 raises density and shrinks available dp) without creating more AVDs:
 
 ```bash
-adb -s <avd-serial> shell wm density 540    # then 600 to go further; `wm density reset` to restore
+"$ADB" -s <avd-serial> shell wm density 540    # then 600 to go further; `wm density reset` to restore
 ```
 
 Restart the activity after changing density so the layout re-inflates.
@@ -323,14 +323,15 @@ is roughly 1–1.5 GB.
 Start emulators **detached** — they don't exit on their own, so never run one in the foreground of
 a script that needs to keep going:
 
+**Start the adb daemon first.** An emulator launched while adb is down logs `Unable to connect to
+adb daemon on port: 5037` and never registers — `adb devices` stays empty while the process runs
+happily in the background, which looks like a hang.
+
 ```bash
-nohup "$EMU" -avd Pixel10Test -no-boot-anim -no-audio >/dev/null 2>&1 &
+"$ADB" start-server
+nohup "$EMU" -avd Pixel10Test -no-boot-anim -no-audio -port 5554 >/dev/null 2>&1 &
 nohup "$EMU" -avd Wear34 -no-boot-anim -no-audio -port 5558 >/dev/null 2>&1 &
 ```
-
-Start `adb start-server` **before** launching an emulator. One started while the adb daemon is
-down logs `Unable to connect to adb daemon on port: 5037` and never registers — `adb devices`
-stays empty while the process runs happily in the background, which looks like a hang.
 
 Ports are assigned in even pairs from 5554 upward in **boot order, not per-AVD** — the first
 emulator to finish booting is always `emulator-5554`, whichever AVD it was. Pin one explicitly
@@ -338,7 +339,7 @@ with `-port` once you're running more than one at a time, and before doing anyth
 a specific instance, confirm which AVD it actually is:
 
 ```bash
-adb -s emulator-5554 emu avd name
+"$ADB" -s emulator-5554 emu avd name
 ```
 
 ### Wait for boot — on the property, never on a guessed sleep
@@ -358,18 +359,20 @@ First boot of a cold AVD is a few minutes; later boots resume from a snapshot in
 ### Multiple devices need `-s`
 
 ```bash
-E="-s emulator-5558"
-"$ADB" $E shell getprop ro.build.version.sdk      # confirm which API you're actually talking to
+PHONE="-s emulator-5554"                          # Pixel10Test, booted with -port 5554 above
+WATCH="-s emulator-5558"                          # Wear34
+"$ADB" $PHONE shell getprop ro.build.version.sdk  # confirm which API you're actually talking to
 ```
 
 Every `adb` command without `-s` fails with *"more than one device/emulator"* the moment a second
-one is running.
+one is running. Name the two separately rather than reusing one variable — installing the phone
+build onto the watch reports `Success` and then fails in ways that look like app bugs.
 
 ### Install and launch
 
 ```bash
-"$ADB" $E install -r path/to/app-debug.apk
-"$ADB" $E shell am start -n com.example.app/com.example.app.MainActivity
+"$ADB" $PHONE install -r path/to/app-debug.apk
+"$ADB" $PHONE shell am start -n com.example.app/com.example.app.MainActivity
 ```
 
 > **The component name is not always what you'd guess.** `applicationId` and the Kotlin package
@@ -379,13 +382,13 @@ one is running.
 > **after** install already reported `Success` — which reads exactly like a launch crash when the
 > app never started at all. If unsure, use the shape-independent launcher-intent form instead:
 > ```bash
-> "$ADB" $E shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
+> "$ADB" $PHONE shell monkey -p com.example.app -c android.intent.category.LAUNCHER 1
 > ```
 
 Grant a runtime permission directly instead of hunting for the system dialog in a script:
 
 ```bash
-"$ADB" $E shell pm grant com.example.app android.permission.POST_NOTIFICATIONS
+"$ADB" $PHONE shell pm grant com.example.app android.permission.POST_NOTIFICATIONS
 ```
 
 Do **not** dismiss a permission dialog with `input keyevent 4` (back) if you do need to interact
@@ -398,10 +401,10 @@ with it — back can exit the whole app to the launcher instead of just the dial
 `Success` from `install` says nothing about whether the app runs.
 
 ```bash
-"$ADB" $E shell ps -A | grep example                                   # alive?
-"$ADB" $E shell dumpsys activity activities | grep topResumedActivity  # foreground?
-"$ADB" $E logcat -d -b crash | tail -30                                # empty is the pass
-"$ADB" $E exec-out screencap -p > screen.png                           # what it looks like
+"$ADB" $PHONE shell ps -A | grep example                                   # alive?
+"$ADB" $PHONE shell dumpsys activity activities | grep topResumedActivity  # foreground?
+"$ADB" $PHONE logcat -d -b crash | tail -30                                # empty is the pass
+"$ADB" $PHONE exec-out screencap -p > screen.png                           # what it looks like
 ```
 
 Watch-specific false alarms:
