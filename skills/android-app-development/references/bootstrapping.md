@@ -65,6 +65,11 @@ Notes:
 
 ## Architecture defaults worth setting from the first commit
 
+**Set the version scheme and the two repo-hygiene files now** (`releasing.md` §1 and §4). A single
+declared version with a derived `versionCode`, `**/build/` rather than `*/build/` in `.gitignore`,
+and a `.gitattributes` pinning `gradlew` to LF. All three are one line each on day one; all three
+are a cross-module retrofit later, and the last two are invisible until the first CI run.
+
 Pulled from what the audits in this corpus treat as load-bearing, not optional:
 
 - **A pure-Kotlin `:domain` module that imports nothing from `android.*` or `androidx.*`.** Audits explicitly flag any Android import in `:domain` as a Critical architecture violation. Decide this at bootstrap time — retrofitting purity onto a domain module that's already accumulated Android imports is much more painful than starting clean.

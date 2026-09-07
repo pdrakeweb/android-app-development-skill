@@ -321,12 +321,18 @@ with a reason.
 - **Keep-rule discipline for R8.** Anything reflective or serialized needs keep rules, and a
   stripped serializer is a classic silent failure — it surfaces as a wrong user-facing message about
   a file that is perfectly intact. Re-run the round-trip test after any keep-rule change.
+- **Building and publishing the artifact is `releasing.md`.** Version single-sourcing (a tag that
+  disagrees with the built APK is silent and unreproducible), tag-triggered CI builds, signing with
+  a keystore in CI, and the two repo-hygiene traps that only fail once the build leaves your
+  machine. Read its §1 at scaffold time, not here — retrofitting a version scheme across modules
+  after there are tags in the history is the expensive path. This is the path for a **GitHub
+  releases beta** (intake Q10), which the Play automation below does not cover.
 - **Automate the upload if this goes to Play more than once.** **Gradle Play Publisher** builds,
   uploads and promotes bundles and listings with `track`, `releaseStatus`, `userFraction` and
   `updatePriority` config. **Pin the right major: GPP 3.13.0 for AGP 7–8, 4.x for AGP 9+** — with
   the pins in `platform-currency.md` that means 4.x. `fastlane supply` is the established
   alternative. (`gplay`, a newer Go CLI positioned for agentic flows, is unproven — don't put a
-  release path on it yet.) Google's `play` skill covers the submission mechanics.
+  release path on it yet.) No Google skill covers Play submission mechanics; `play/play-policy-insights` checks policy before you submit (`ecosystem.md` §2).
 - **Publish, then document the diagnostics.** The recurring closing instruction in the corpus is:
   *implement the recommendations, publish a beta, push all the code, and make sure the debug
   commands are documented in the docs folder before pushing everything up.* The `adb` commands used

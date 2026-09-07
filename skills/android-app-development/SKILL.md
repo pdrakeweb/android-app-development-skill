@@ -1,6 +1,6 @@
 ---
 name: android-app-development
-version: 0.4.0
+version: 0.5.0
 description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
 license: Apache-2.0
 compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
@@ -88,6 +88,7 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 | Starting a new app, or splitting a sub-project out of a monorepo | `references/bootstrapping.md` |
 | Setting up a machine, or creating/booting phone, tablet, or Wear OS emulators | `references/windows-toolchain-and-emulators.md` |
 | Auditing an app before release, fixing audit findings, processing a real-hardware bug report, writing a test plan | `references/testing-and-bugs.md` |
+| Setting up versioning, a tag-triggered release build, signing in CI, or publishing outside Play | `references/releasing.md` |
 | Specifying permissions, local storage, or cloud backup/sync | `references/permissions-storage-cloud.md` |
 | Delegating a large review or a research question to a subagent, or fanning out fixes across multiple files safely | `references/subagent-delegation.md` |
 
