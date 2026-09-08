@@ -98,10 +98,14 @@ if (Test-Path $scripts) { Copy-Item $scripts $stage -Recurse }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($tmp, $outName)
+
+# Count before the staging dir is removed: $stage lives inside $tmp, so counting
+# afterwards throws under ErrorActionPreference=Stop and fails a build whose zip
+# was already written correctly.
+$files = @(Get-ChildItem $stage -File -Recurse).Count
 Remove-Item $tmp -Recurse -Force
 
 $size = (Get-Item $outName).Length
-$files = @(Get-ChildItem $stage -File -Recurse).Count
 Write-Host "Built: $outName" -ForegroundColor Green
 Write-Host "  skill   : $skillName v$version"
 Write-Host "  files   : $files"
