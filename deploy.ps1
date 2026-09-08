@@ -5,12 +5,12 @@
 .DESCRIPTION
     1. Runs build.ps1.
     2. Extracts the zip to a temp dir.
-    3. Locates Claude Desktop's skills dir — it uses a nested
+    3. Locates Claude Desktop's skills dir - it uses a nested
        <outer-guid>\<inner-guid>\skills\<skill-name>\ layout under
        %APPDATA%\Claude\local-agent-mode-sessions\skills-plugin.
     4. Backs up any existing deployment (keeps the last 5).
     5. Mirrors the new files in with robocopy /MIR.
-    6. Registers the skill in manifest.json — Claude Desktop only loads skills
+    6. Registers the skill in manifest.json - Claude Desktop only loads skills
        listed there, so a bare file copy is invisible.
 
 .PARAMETER DryRun
@@ -75,7 +75,7 @@ function Sync-Manifest {
     $skillsDir = Split-Path -Parent $TargetDir
     $manifestPath = Join-Path (Split-Path -Parent $skillsDir) 'manifest.json'
     if (-not (Test-Path -LiteralPath $manifestPath)) {
-        Warn "No manifest.json beside the skills dir — Claude Desktop will NOT see this skill."
+        Warn "No manifest.json beside the skills dir - Claude Desktop will NOT see this skill."
         Warn "Install it once via Settings > Capabilities > Skills (upload the zip), then redeploy."
         return 'no-manifest'
     }
@@ -99,13 +99,13 @@ function Sync-Manifest {
         creatorType = 'user'; updatedAt = $now; enabled = $true })
     $manifest.lastUpdated = [int64]([datetimeoffset](Get-Date)).ToUnixTimeMilliseconds()
     $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
-    Ok "Registered '$SkillName' in manifest.json (was missing — a bare file copy is invisible)."
+    Ok "Registered '$SkillName' in manifest.json (was missing - a bare file copy is invisible)."
     return 'registered'
 }
 
 try {
     Write-Host ""; Write-Host "=== Skill Deploy ===" -ForegroundColor Magenta
-    if ($DryRun) { Warn "(DRY RUN — nothing will be written)" }
+    if ($DryRun) { Warn "(DRY RUN - nothing will be written)" }
 
     $meta = Get-Frontmatter (Join-Path $root 'skills\android-app-development\SKILL.md')
     Info "Skill: $($meta.Name)"

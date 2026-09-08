@@ -37,6 +37,24 @@ else
   printf '      shellcheck not installed — skipping lint\n'
 fi
 
+# ---- PowerShell scripts ------------------------------------------------------
+# Windows PowerShell 5.1 reads a BOM-less .ps1 as the ANSI codepage, not UTF-8.
+# An em dash there decodes to a right curly quote, and PowerShell "treats smart
+# quotation marks ... as normal quotation marks for strings" -- so the string
+# ends early and the file stops parsing, with errors that point at the wrong
+# lines and never name the encoding. Keep .ps1 pure ASCII; it is immune to how
+# the file is read, where a BOM is invisible state an editor can drop.
+head_ "PowerShell scripts"
+for f in ./*.ps1; do
+  [ -e "$f" ] || continue
+  if LC_ALL=C grep -nP '[^\x00-\x7F]' "$f" >/dev/null 2>&1; then
+    bad "non-ASCII in $f (breaks under Windows PowerShell 5.1):"
+    LC_ALL=C grep -nP '[^\x00-\x7F]' "$f" | head -5 | sed 's/^/        /'
+  else
+    ok "ASCII-only: $f"
+  fi
+done
+
 # ---- hook --------------------------------------------------------------------
 head_ "Hook"
 if need node; then
