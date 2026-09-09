@@ -12,7 +12,8 @@ This is the highest-value part of the corpus. The pattern — exhaustive categor
    - [3b. Screenshot testing](#3b-screenshot-testing-catching-what-a-log-line-cannot)
 4. [Real-hardware bug reports](#4-real-hardware-bug-reports)
 5. [UI / adaptive-layout review](#5-uiadaptive-layout-review-screenshot-driven)
-6. [What's deliberately not in here](#whats-deliberately-not-in-here)
+6. [Verify the artifact, not the exit code](#6-verify-the-artifact-not-the-exit-code) — tools that report success while doing nothing
+7. [What's deliberately not in here](#whats-deliberately-not-in-here)
 
 ## 1. The adversarial audit prompt
 
@@ -161,6 +162,62 @@ Two of those are no longer stylistic at `targetSdk` 36 and should be graded **P0
 - **Orientation on large screens.** Manifest orientation and aspect-ratio restrictions are ignored on displays ≥600dp smallest width, so a portrait-locked layout *will* be handed a landscape tablet window. Screenshot the tablet rig specifically; the phone rig cannot show this.
 
 `hamen/compose_skill` (`ecosystem.md` §5) runs this exact review as a scored audit with every deduction cited to an official page — worth installing for a UI-heavy app rather than reproducing by hand.
+
+## 6. Verify the artifact, not the exit code
+
+**An exit code is a claim. An artifact is evidence.** Several tools in this exact toolchain report
+success while doing nothing, and an agent that trusts the claim reports progress it did not make —
+worse than failing, because a failure at least stops. After any step that is supposed to *produce*
+something — an installed package, an APK, a generated schema, a registered task, a passing test —
+assert on the thing itself.
+
+Every entry below was hit on Windows inside one week on a single project.
+
+| What lied | Observable symptom | The check that catches it |
+|---|---|---|
+| **SDK CLI exit codes, in both directions** | `sdkmanager --list` and `android --help` return **9 on success**. Worse, `sdkmanager "platforms;android-37.0"` printed *"Package platforms not found. Package android-37.0 not found."* and **exited 0**, having installed nothing | `ls "$ANDROID_HOME/platforms/android-37"` — check the filesystem for the package directory after every SDK install, never the exit code |
+| **A build piped through `tail`** | `./gradlew assembleDebug 2>&1 \| tail -120` returns *tail's* status, so a FAILED build reads as exit 0 — and the compiler errors have already scrolled past the window | Redirect to a file, check `$?` on the build itself, then read the file: `./gradlew assembleDebug > build.log 2>&1; rc=$?`. In bash, `set -o pipefail` or `${PIPESTATUS[0]}` also work |
+| **A nested block comment in a `.kts`** | Gradle configures without complaint and every task declared below the comment simply does not exist — *"Task 'checkCommentHygiene' not found"*, for a task plainly visible in the file | Assert the task is registered: `./gradlew tasks --all \| grep -q checkCommentHygiene`. A task you cannot see in `tasks --all` is not there, whatever the file says |
+| **A Gradle task touching `Project` inside `doLast`** | Passes for days, then fails — it only breaks when the build **stores** a new configuration-cache entry, not when it reuses one | Resolve `Project` values into local `val`s at configuration time and close over those. To test it at all, force a cache miss (`--no-configuration-cache`, or change an input) rather than trusting a green run |
+| **A module whose source dir is not picked up** | Compiles **empty** and the build passes. With nothing depending on it yet, there is no error anywhere | An artifact check, not a build check: for a Room module assert the exported schema JSON exists; otherwise assert the expected classes are in the output jar/dex |
+| **Counting `<testcase name=` in JUnit XML** | Counts **declared** tests, not passing ones. A failing case has a `<failure>` child and is otherwise identical, so a naive grep prints a clean list of PASS lines for a run that failed | Read the `failures=` and `errors=` attributes on `<testsuite>`, or parse for `<failure>`/`<error>` children |
+
+Three of these have a documented cause worth knowing:
+
+- **The SDK package syntax changed.** `android sdk install` takes **slash**-separated names —
+  `platforms/android-34`, `build-tools/34.0.0`, `system-images/android-35/google_apis/x86_64`
+  (<https://developer.android.com/tools/agents/android-cli>). The old `sdkmanager` form is
+  semicolon-separated, and the deprecated shim mangles it on the way through. Call
+  `android sdk install` directly. The exit-code-9 behaviour is observed on this toolchain; no
+  official page documents it.
+- **Kotlin nests block comments** — *"Block comments in Kotlin can be nested"*
+  (<https://kotlinlang.org/docs/basic-syntax.html>). A glob or a `/*` written inside KDoc opens a
+  comment that never closes. In a `.kt` file that usually errors; in `build.gradle.kts` the script
+  just ends early and Gradle proceeds with whatever it managed to read.
+- **The configuration cache cannot serialize a script object.** Referencing `rootDir`, or anything
+  else hanging off `Project`, from inside `doLast` captures one. Gradle documents the execution-time
+  restrictions at
+  <https://docs.gradle.org/current/userguide/configuration_cache_requirements.html> — that page was
+  not reachable to quote from here, so treat the mechanism above as observed behaviour and the page
+  as the authority.
+
+### A guard that has never been observed failing is not yet a guard
+
+Two of the six were bugs **inside verification tasks that appeared to be working**. The comment
+truncation silently deleted a hygiene check; the configuration-cache bug let a broken check pass for
+days. In both cases the tooling reported green and nobody had ever seen it report red.
+
+So before trusting any check you write — a Gradle verification task, a lint rule, a CI step, a
+script in `scripts/`:
+
+1. **Plant a violation** the check is supposed to catch.
+2. **Confirm it exits non-zero**, and that the message names the file and line.
+3. **Remove the violation.**
+4. **Confirm it passes.**
+
+A check only ever seen passing is indistinguishable from a check that cannot fail, and the second
+kind is worse than none: it is a green light nobody is watching. This is the same discipline the
+audit process applies to findings — reproduce it before you believe it — turned on your own tooling.
 
 ## What's deliberately not in here
 

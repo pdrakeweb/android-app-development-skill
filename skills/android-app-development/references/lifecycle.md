@@ -163,6 +163,11 @@ A normal build-review-fix loop, with three rules that come straight from what wo
 - **Run `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` once at the start of a cold session.** A JDK, Gradle or AGP mismatch
   produces configuration-time errors that never name the real cause, and an AGP 8-era scaffold does
   not build at all under AGP 9 (`platform-currency.md` §3).
+- **Do not believe a build because it exited 0.** The SDK CLI returns 9 on success and 0 after
+  installing nothing; a build piped through `tail` reports tail's status, not the build's; a module
+  whose source directory is not picked up compiles empty and passes. Assert on the artifact
+  (`testing-and-bugs.md` §6), which also carries the rule for the verification tasks you write
+  yourself.
 - **A first compile of a never-compiled module is its own step**, and its output is worth reading
   carefully: work errors in the order reported, smallest edit first, re-running after each rather
   than batching. Distinguish a **typo** from a **design error** — the corpus's best worked example
