@@ -26,10 +26,11 @@ wins.** Install this one *alongside* them, not instead of them.
 |---|---|
 | `SKILL.md` | Entry point: the phase table, the version pins, the reference index, the house rules |
 | `references/user-calibration.md` | Establishing the user's experience level, then tuning vocabulary, explanation depth and how much to decide for them; plain-language glossary for every term the skill uses |
-| `references/intake-interview.md` | Ten broad-to-narrow questions asked before any code, plus dynamically generated follow-ups |
+| `references/intake-interview.md` | Ten broad-to-narrow questions asked before any code, dynamically generated follow-ups, and an optional persona interview |
 | `references/design-phase.md` | Design tokens, mockup generation and the converge-on-one loop, seed-colour theme generation, contrast as a unit test, and the three-seat council design review |
 | `references/lifecycle.md` | The nine phases (0 through 7, with a 1b), each with an artifact and an exit gate |
-| `references/platform-currency.md` | Dated version pins, the AGP 9 break, API 36 behaviours that break working apps, Play deadlines, developer verification |
+| `references/platform-currency.md` | Dated version pins, a process for choosing dependencies that work together, the AGP 9 break, API 36 behaviours that break working apps, Play deadlines, developer verification |
+| `references/target-sdk-gotchas.md` | What breaks when `targetSdk` goes up, API 31 through 37, plus manufacturer battery behaviour no target warns about |
 | `references/ecosystem.md` | Android CLI, the per-phase Google-skill routing table, Journeys, MCP device control, prior art |
 | `references/bootstrapping.md` | Starting a project, or extracting one from a monorepo; architecture defaults |
 | `references/windows-toolchain-and-emulators.md` | Toolchain install without Android Studio, and phone/tablet/Wear OS emulators |

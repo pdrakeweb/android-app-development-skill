@@ -323,6 +323,52 @@ Two questions worth asking at the end of *every* interview regardless of answers
 
 ---
 
+## Optional · Personas — only when the user asks
+
+Run this when the user asks for personas, or says the app is for "people like…" and wants the
+design checked against them. Don't add it unasked: it is six more questions.
+
+A persona is a short, made-up description of one kind of person the app is for — enough to settle
+"would this person understand this screen?" without asking the user every time. Most useful when
+the app is for more than one kind of person, or for people unlike the developer.
+
+**Ask, don't invent.** Personas made up from nothing describe the developer's guesses. Ask these
+in batches of two to four, with options and a suggested default, like the core questions:
+
+1. **Who do you have in mind?** Real people are the best starting point — the user, their family,
+   their customers — described by role, never by name. ("Me", "my partner", "my parents", "people
+   at my gym".)
+2. **How should they differ?** Offer the dimensions that matter for this app and let the user pick:
+   age, situation (job, health, family), experience with what the app does, comfort with
+   technology, money, which devices they own, and where and when they would use it.
+3. **Should one of them match you closely?** If the user is also a real user, say yes — it gives a
+   persona whose answers can be checked by asking.
+4. **Whose needs win when they conflict?** Name one primary persona. Then ask who sets the floor —
+   the person the app must still work for (oldest phone, least time, least comfortable with
+   technology).
+5. **Who is it not for?** One or two anti-personas stop features drifting toward people the app
+   was never meant to serve.
+6. **For each, what are they trying to get done, and what would make them give up?** One sentence
+   each. The "give up" answer is usually the more useful one.
+
+**Then draft and play back.** Write three to five personas: a plain, common first name; one line on
+who they are; their situation; their devices; their goal in one sentence; what they need from the
+app; what would make them quit. Add a one-table summary so they can be compared at a glance.
+Show it, ask what is wrong, and adjust. Users correct personas readily — names that feel too
+specific, details that feel too personal — so expect one round.
+
+**Rules.**
+
+- **Personas are composites, not records of real people.** No real names, and no real health,
+  money or family details, even when the user supplied them as the starting point. A persona can
+  be *like* the user's spouse without being her.
+- **Record them in `docs/PERSONAS.md`**, with the primary persona marked and a short "design
+  consequences" table: which decisions each persona drove.
+- **Use them afterwards.** In design reviews ("would the floor persona find this?"), in tie-breaks,
+  and as the basis for synthetic test data — one fixture dataset per persona, never real data.
+
+---
+
 ## Closing the interview
 
 Play the answers back as a compact summary — one line per question — and get an explicit

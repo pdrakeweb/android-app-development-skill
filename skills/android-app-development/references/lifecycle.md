@@ -70,6 +70,21 @@ worked, in this order:
 
 Companion artifacts, created here when the interview called for them:
 
+- **`docs/DECISIONS.md`** — one line per decision, in the order made, never rewritten (a changed
+  decision gets a new line that replaces the old one). Each line says **where the decision came
+  from**, because "the user decided" and "I picked a default" age very differently:
+
+  | Source | Means | Example |
+  |---|---|---|
+  | **User (words)** | The user wrote it. Quote them exactly | *"Android 14+."* |
+  | **User (picked)** | The user chose one of the options offered | Picked "Follow system theme" |
+  | **Assumed** | The user skipped the question; you took the suggested default and told them | Oldest phone set to Android 12 because the question went unanswered |
+  | **Proposed** | Your recommendation, waiting for the user to confirm. Not in force yet | A clinical threshold that needs review |
+
+  Add "what would change this" to each line. An *Assumed* line is the first thing to re-check when
+  the user comes back; a *Proposed* line must never be built as if it were decided.
+- **`docs/PERSONAS.md`**, when the interview included personas (`intake-interview.md`, Optional ·
+  Personas).
 - **`docs/adr/ADR-NNNN-*.md`** for any decision that's expensive to reverse — module boundaries,
   an on-device-vs-cloud split, a wire format, a safety rule. An ADR is cheaper than re-deriving the
   reasoning in six weeks.
