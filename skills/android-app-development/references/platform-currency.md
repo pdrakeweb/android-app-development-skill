@@ -16,6 +16,9 @@ at all.
 - [7 · Wear OS requirements](#7--wear-os-requirements)
 - [8 · Emulator acceleration on Windows](#8--emulator-acceleration-on-windows)
 - [9 · Plain English ↔ API levels](#9--plain-english--api-levels) — translating the intake answer
+- [10 · Choosing dependencies that work together](#10--choosing-dependencies-that-work-together) — a process, not a list
+
+What breaks when `targetSdk` goes up, version by version, is in `target-sdk-gotchas.md`.
 
 ---
 
@@ -260,3 +263,55 @@ hand-waved: some newer APIs need a runtime version check and a fallback path; so
 libraries raise their own floor over time; and every supported version below the test device is a
 version nobody has actually run the app on unless you add an emulator for it. None of that is
 prohibitive down to 28 — it is why 28 is this corpus's floor rather than something higher.
+
+---
+
+## 10 · Choosing dependencies that work together
+
+The pin table (§1) goes stale; this process doesn't. Use it at scaffold time and whenever a
+dependency is added or upgraded. The goal is a set of versions that are known to build together
+*before* any app code depends on them.
+
+**Why this needs a process.** An Android build is a stack of tools that reach into each other:
+the Android Gradle Plugin (the build plugin, "AGP"), Gradle itself, the JDK, Kotlin, and then
+plugins that hook into AGP's internals — dependency injection, annotation processing, screenshot
+testing, database schema export. When AGP changes its internals, those plugins break first, and
+they break with errors that don't say "version mismatch". In this corpus, an AGP major upgrade
+made a dependency-injection plugin fail with *"Android BaseExtension not found"* and a
+screenshot-testing plugin fail with *"Extension of type 'TestedExtension' does not exist"* — both
+meant "this plugin is too old for this AGP", and neither said so.
+
+**The process.**
+
+1. **Choose the build plugin first.** Take the newest stable AGP (Google's `agp-9-upgrade` skill
+   and the AGP release notes are the authority). Everything else is chosen to fit it, not the
+   other way round.
+2. **Read its compatibility table** for the minimum Gradle and JDK, and use those. Don't pick a
+   newer Gradle "to be safe" without checking that AGP supports it.
+3. **Prefer bundles that were tested together.** Where a family publishes a bill of materials —
+   one version number that pins a whole set of libraries (the Compose BOM, the Firebase BOM) —
+   use it instead of choosing each library's version yourself.
+4. **For every plugin that hooks into the build** (dependency injection, annotation processors,
+   screenshot testing, code generators), open its release notes and search for the AGP major
+   version and your Kotlin version. Take the first release that says it supports them. If none
+   does yet, that plugin decides whether you can use this AGP at all — record it and pick the
+   previous AGP rather than forcing it.
+5. **Annotation processors follow Kotlin, not AGP.** Check which Kotlin versions the processor
+   (KSP or similar) states it supports, and match.
+6. **Prefer releases a couple of weeks old** unless you need a fix that only the newest has. A
+   brand-new release is where regressions surface.
+7. **Prove the set before writing app code.** Apply every plugin to the empty scaffold, then run
+   `./gradlew help`, `./gradlew assembleDebug`, and the unit-test task. Plugin and configuration
+   failures show up here in seconds; found later, they look like app bugs. Check the artifacts,
+   not just the exit codes (`testing-and-bugs.md` §6).
+8. **Read the error as a version clue.** An error that names an internal build class
+   (`...Extension not found`, `...does not exist`, a missing variant API) almost always means a
+   plugin is too old for the build plugin. Upgrade the plugin first; downgrade AGP only if no
+   compatible plugin release exists.
+9. **Write down what you chose and why.** Put every version in the version catalog, with a
+   comment giving the date checked and the page it came from. Any workaround flag (a
+   `gradle.properties` switch an error message told you to set, for example) gets a short ADR
+   saying what it works around and when to remove it.
+10. **Re-run this at each milestone**, or let a dependency bot (Renovate, Dependabot) propose
+    upgrades that CI then proves with step 7.
+

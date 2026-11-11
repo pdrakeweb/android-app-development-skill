@@ -1,6 +1,6 @@
 ---
 name: android-app-development
-version: 0.6.0
+version: 0.7.0
 description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
 license: Apache-2.0
 compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
@@ -83,7 +83,8 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 | Someone asked for a new app, or a rough idea needs turning into a spec | `references/intake-interview.md` |
 | Mocking up screens, choosing a palette, generating a theme, or reviewing how the built app looks | `references/design-phase.md` |
 | Running the end-to-end process; what artifact each phase produces and what "done" means | `references/lifecycle.md` |
-| Pinning versions, checking a Play deadline, or diagnosing an AGP 9 / API 36 breakage | `references/platform-currency.md` |
+| Pinning versions, choosing dependencies that work together, checking a Play deadline, or diagnosing an AGP 9 / API 36 breakage | `references/platform-currency.md` |
+| Raising `targetSdk`, or an app that "worked yesterday" broke after a target bump or an Android update | `references/target-sdk-gotchas.md` |
 | Choosing a Google skill to defer to, using Android CLI, or picking a test/device-control tool | `references/ecosystem.md` |
 | Starting a new app, or splitting a sub-project out of a monorepo | `references/bootstrapping.md` |
 | Setting up a machine, or creating/booting phone, tablet, or Wear OS emulators | `references/windows-toolchain-and-emulators.md` |
