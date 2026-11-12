@@ -22,30 +22,24 @@ three rounds in one place means the defect is in the design, and another fix pas
 Phases 0–2 (including 1b) happen once, and re-opening them later is a deliberate act that gets
 written down, not a drift.
 
-### When the thing being built is a library, not an app
+### When the thing being built is a library
 
-The interview, the design phase and `verify-install.sh` assume an app. A library whose repository
-already holds a design, an architecture and a roadmap follows the same order with different
-gates:
+The interview, design phase and `verify-install.sh` assume an app. A library whose repository
+already holds its design keeps the order and changes the gates:
 
-| App phase | For a library |
+| Phase | For a library |
 |---|---|
-| 0 Interview, 1 Spec | The repository's own design and architecture documents are the spec. Read them all first. **Ask for the Maven namespace before the first source file**: it becomes every package name and is expensive to change. Ask before changing the shape of the public API from what the architecture document says |
-| 1b Design | Not applicable, unless the sample app has a UI worth designing |
-| 2 Plan | The roadmap, one milestone at a time, each with a "proven by" statement |
-| 3 Implement | **Prove an empty multi-module build first** (`platform-currency.md` §10 step 7). Give the pure-Kotlin core a build guard against Android and network imports, and show it failing on a planted import. Add a second guard if the library must not know about the apps that use it |
-| 4 Test scenarios | Unit tests against fakes the library itself ships; opt-in contract tests against real services (`testing-and-bugs.md` §3c); a **sample app** that `verify-install.sh` and scripted journeys run against (`testing-and-bugs.md` §3a) |
-| 5 Audit | A read-only review anchored on the library's invariants (`subagent-delegation.md`, Pattern B2) |
-| 6 Beta | Publish to the local Maven repository and build a *separate* example project against the published artifacts, so the published form is what gets tested. Check what each artifact adds to an app's size (`testing-and-bugs.md` §6) |
-| 7 Handoff | An integration guide, and a usage skill tested by handing it to an agent with no other context and a different app to build: fix every place it reports having guessed, then repeat with a new agent |
+| 0, 1 | The repository's design documents are the spec. **Ask for the Maven namespace before the first source file** (it becomes every package name), and before changing the public API's shape |
+| 2 | The roadmap, one milestone at a time, each with a "proven by" |
+| 3 | Prove an empty multi-module build first (`platform-currency.md` §10). Guard the pure-Kotlin core against Android and network imports, and show the guard failing |
+| 4 | Fakes the library ships; opt-in tests against real services; a sample app for `verify-install.sh` and scripted journeys (`testing-and-bugs.md` §3) |
+| 5 | A read-only review anchored on the invariants (`subagent-delegation.md`, Pattern B2) |
+| 6 | Publish to local Maven and build a separate example project against the published artifacts. Check what each adds to an app's size |
+| 7 | A usage skill, tested by giving it to an agent with no other context and a different app to build; fix every reported guess and repeat |
 
-**One branch and one pull request per milestone, stacked, needs a policy for late fixes.** With
-milestone branches stacked one on the next, a fix that belongs to the first milestone naturally
-gets committed on the tip, because that is where work is happening. Nothing breaks, but the first
-pull request no longer shows all of its milestone. Decide before stacking: either late fixes go on
-the base branch and are merged up the stack, or each pull request says plainly that the tip
-carries fixes for earlier milestones. When the stack is merged, retarget each pull request to the
-main branch before merging it, in order, or only the first is recorded as merged.
+**Stacked milestone pull requests need a policy for late fixes:** either they go on the base
+branch and merge up, or each pull request says the tip carries fixes for earlier milestones. To
+merge the stack, retarget each to main first, in order.
 
 ---
 
@@ -251,8 +245,8 @@ assuming a scenario fits:
 | Toolchain and build-config guards | Not a device behaviour |
 | Soak (fd/thread/memory before-after) | Needs process-level measurement |
 
-A third format, **launch extras in and one log line out**, suits a library's sample app and
-network-heavy features better than either: `testing-and-bugs.md` §3a.
+A third format, launch extras in and one log line out, suits a library's sample app and
+network-heavy features: `testing-and-bugs.md` §3.
 
 Both formats feed the same gate. Whichever you use, the harness conventions below still apply —
 they are about *rigs and evidence*, not about file format.

@@ -311,45 +311,28 @@ From `field-assistant` (cloud inference via a third-party LLM gateway — not Go
 
 ### A client that sends user data to a host the user typed in
 
-A "bring your own server or key" feature sends prompts, and whatever personal data the user
-approved, to a URL from a settings field. An independent review of one such client found that
-the HTTP library's defaults would have re-sent the whole request to wherever a `307` pointed, and
-would silently retry a request that was not safe to send twice. For any such client:
+A review found OkHttp's defaults would re-send a prompt, with approved personal data, to wherever
+a `307` pointed, and silently retry a request not safe to send twice. For "bring your own server":
 
-- **Turn off redirects and silent retries**: in OkHttp, `followRedirects(false)`,
-  `followSslRedirects(false)`, `retryOnConnectionFailure(false)`. A redirect is an answer to show
-  the user, not an instruction to follow with their data.
-- **Never put a response body or an exception message into an error or a log.** Both can carry
-  the request back. Type names, status codes and timings only.
-- **No body-logging interceptor on that client**, in any build type.
-- **Plain HTTP to a home server needs two things.** A network security config cannot express
-  "private addresses only", so allowing it means `usesCleartextTraffic="true"` *plus* a check in
-  code, on the address actually connected to, that refuses plain HTTP to anything that is not a
-  private or loopback address, before the request is written.
-- **A password-type field for the key still needs an autofill hint**, or a password manager is
-  not told what it is and cannot save or restore it.
+- `followRedirects(false)`, `followSslRedirects(false)`, `retryOnConnectionFailure(false)`.
+- No response bodies or exception messages in errors or logs (they can echo the request), and no
+  body-logging interceptor in any build type.
+- Plain HTTP to a home server: a network security config cannot say "private addresses only", so
+  it takes `usesCleartextTraffic="true"` plus a check in code on the connected address.
+- A key field needs an autofill hint as well as a password input type, or password managers
+  cannot save it.
 
-### Downloads: `DownloadManager` cannot reach the local network on Android 17
+### `DownloadManager` cannot reach the local network on Android 17
 
-A `DownloadManager` request for a file on a LAN address stayed `PENDING` at zero bytes
-indefinitely on an API 37 device. The server was never contacted and no error was reported. The
-download runs in a system process, so the app's own `ACCESS_LOCAL_NETWORK` grant does not help;
-the identical file through a loopback address downloaded at once. (Observed with the permission
-granted earlier in the same session; the grant was not re-checked at that moment.)
+A request for a file on a LAN address stayed `PENDING` at zero bytes with no error and no contact
+with the server; the same file over loopback downloaded at once. The download runs in a system
+process, so the app's own `ACCESS_LOCAL_NETWORK` grant does not help (inferred: the grant was
+made earlier in the session and not re-checked).
 
-- **Anything fetched with `DownloadManager` must be on a public address.** A file served from a
-  home server will hang without a failure, which is the worst kind by this skill's own house rule.
-- In tests, serve the file through `adb reverse` and `127.0.0.1`
-  (`windows-toolchain-and-emulators.md` §7).
-- Give every download a timeout of your own that turns "pending for N minutes with zero bytes"
-  into a visible, recoverable failure.
-- **Verify what arrived.** Check size and SHA-256 when the download finishes, delete on mismatch,
-  and keep the file's original extension: some model runtimes identify the format by extension and
-  reject a correct file under another name.
-- Before offering a model for download, the hosting site can usually answer three questions
-  without downloading it. On Hugging Face the API gives `gated` (is there a licence
-  click-through), the file size, and the SHA-256 (`lfs.oid` in the tree listing). Pin the URL to
-  a commit, not to `main`.
+- Files fetched with `DownloadManager` must be on a public address. In tests use `adb reverse`.
+- Add your own timeout, so "zero bytes for N minutes" becomes a visible failure.
+- Verify size and SHA-256 on completion, and keep the file's extension: some model runtimes
+  identify the format by it.
 
 ## On-device and hybrid inference
 
@@ -366,18 +349,13 @@ So, as a standing audit item for any app using hybrid inference:
 - **Make the routing decision visible** wherever it carries a privacy meaning — the user should be able to tell which path answered.
 - This is a specific instance of the general rule in intake Q6: decide what happens offline, rate-limited, or with the model missing, *before* it happens.
 
-**Routing between on-device and remote models is a library, not something to write in a
-ViewModel.** For "on the device when possible, the user's own server or a cloud key otherwise,
-with fallback and an approval step before personal data leaves", use `llm-tiers` and defer to its
-own usage skill (`ecosystem.md` §5). It exists because the hand-rolled version of this gets the
-privacy rule and the timeouts wrong in ways that pass every happy-path test.
+**Do not hand-roll this routing in a ViewModel.** For on-device first, the user's own server or
+cloud key otherwise, with fallback and approval before personal data leaves, use `llm-tiers` and
+its usage skill (`ecosystem.md` §5).
 
-**A bundled model runtime is large; a system one is free.** Gemini Nano costs the app nothing in
-size because the model and its engine live in the phone's system software. A runtime for
-downloaded models (LiteRT-LM) is one prebuilt native library per processor type: about 23 MB for
-`arm64-v8a` and 27 MB for `x86_64`. Ship an App Bundle so each phone gets only its own, or filter
-the emulator copy out of release builds (`ndk { abiFilters += "arm64-v8a" }`); an unfiltered APK
-carries both, uncompressed. Do not add the runtime to an app that only uses Nano.
+**A bundled model runtime is large; the system one is free.** LiteRT-LM is one native library per
+ABI: about 23 MB for `arm64-v8a`, 27 MB for `x86_64`. Ship an App Bundle, or keep the emulator
+copy out of release builds (`ndk { abiFilters += "arm64-v8a" }`). Gemini Nano adds nothing.
 
 Also worth knowing, same platform generation: **AppFunctions** lets an app expose tools and data to system agents (Google ships a `device-ai/appfunctions` skill), the **Structured Output API** replaces brittle parsing of model output — adopt it rather than regex-scraping a response — and **ADK for Android** covers multi-agent workflows.
 

@@ -186,7 +186,7 @@ gradlew text eol=lf
   Add `.gitattributes` in the first commit. Adding it later does not fix already-committed files —
   they need `git add --renormalize .` after.
 - **`gradlew` committed from Windows has no executable bit**, and Linux CI fails with
-  *"Permission denied"*. Set it in the index: `git update-index --chmod=+x gradlew`.
+  *"Permission denied"*: `git update-index --chmod=+x gradlew`.
 
 This is the class of bug that makes a build "work on my machine" in the most literal sense: it works
 everywhere the file was never re-checked-out, and fails the first time anything else touches it.

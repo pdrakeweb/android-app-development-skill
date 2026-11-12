@@ -111,24 +111,17 @@ Falls back to <https://adoptium.net/temurin/releases/?version=17> (Windows x64 `
 
 A 17.0.x build is what these instructions assume.
 
-**When the only JDK on the machine is Android Studio's.** A machine with Android Studio and no
-`java` on `PATH` still has a JDK: the one bundled with the IDE (the "JBR"), which may be much newer
-than 17 (25 was observed). Nothing needs installing if the build pins its *output* instead of the
-JDK that runs it:
+**Only Android Studio's JDK on the machine** (no `java` on `PATH`, bundled JBR newer than 17)?
+Nothing needs installing if the build pins its output. Confirm once on a real JDK 17, in CI.
 
 ```bash
 export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
 ```
 
 ```kotlin
-// Kotlin modules
 kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17); freeCompilerArgs.add("-Xjdk-release=17") } }
-// Java compilation
 tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
 ```
-
-`-Xjdk-release` pins both the bytecode level and the JDK API surface, so the result is the same on
-any JDK from 17 up. Confirm it once on a real JDK 17 (CI is the natural place) before relying on it.
 
 ### 1.2 Git for Windows
 
@@ -206,16 +199,9 @@ Then `gh auth login`. Fallback: <https://cli.github.com/>.
 The wrapper is committed to every project in this corpus. Use `./gradlew`, never a system Gradle —
 a mismatched system Gradle is a common source of "works on one machine" build failures.
 
-**A new repository has no wrapper yet, and the machine may have no Gradle.** Download the
-distribution zip from `services.gradle.org`, check it against the published `.sha256`, unpack it
-somewhere temporary, and generate a pinned wrapper with it:
-
-```bash
-gradle wrapper --gradle-version X.Y.Z --gradle-distribution-sha256-sum <hash>
-```
-
-Commit the wrapper and delete the temporary copy. The flag name is
-`--gradle-distribution-sha256-sum`; the shorter spelling people guess does not exist.
+**New repository, no wrapper, no Gradle installed:** download the distribution zip, check it
+against the published `.sha256`, and run
+`gradle wrapper --gradle-version X.Y.Z --gradle-distribution-sha256-sum <hash>` from it.
 
 ### Set once per shell
 
@@ -372,18 +358,13 @@ a specific instance, confirm which AVD it actually is:
 "$ADB" -s emulator-5554 emu avd name
 ```
 
-**An emulator nobody needs to look at should have no window.** Add `-no-window` for scripted runs:
-`adb`, `uiautomator dump`, `screencap` and logcat all work without one. This is not only tidier.
-On a machine whose desktop was locked (the person was working remotely), a windowed emulator
-crashed once and then hung during graphics start-up three times in a row, never registering with
-`adb`; the same AVD booted first time with `-no-window`. The link to the locked desktop is
-inferred, not proven, but the fix was immediate. When a person *does* need to use the emulator,
-it needs a window, placed and sized where they can reach it.
+**Add `-no-window` for scripted runs.** `adb`, `uiautomator dump`, `screencap` and logcat need no
+window. On a machine with a locked desktop, a windowed emulator crashed and then hung in graphics
+start-up three times; the same AVD booted at once with `-no-window` (cause inferred, fix
+observed). An emulator a person must use does need a window, placed and sized for them.
 
-**An emulator that does not appear is not evidence that the machine is full.** Before blaming
-other running emulators, look: free memory, core count, and the last lines of the emulator's own
-output. In the case above the first explanation offered was "two other emulators are running";
-the machine had 43 GB free and ran three without trouble once the window was gone.
+**If an emulator does not appear, look before blaming load:** free memory, cores, and the tail of
+the emulator's own output. Three ran together without trouble on a machine first assumed full.
 
 ### Wait for boot — on the property, never on a guessed sleep
 
@@ -413,17 +394,12 @@ build onto the watch reports `Success` and then fails in ways that look like app
 
 ### Emulators that are not yours
 
-Another agent session, or the person, may start emulators on the same machine while yours is
-running. It happened halfway through a test run: two more appeared, every `adb` call without a
-serial began failing with *"more than one device/emulator"*, and three steps failed for reasons
-that had nothing to do with the code.
+Another session, or the person, may start emulators mid-run; every `adb` call without a serial
+then fails with *"more than one device/emulator"*.
 
-- Start your own emulator on an explicit port (`-port 5560`) so its serial is known in advance.
-- `export ANDROID_SERIAL=emulator-5560` before any `adb` call or Gradle `connected*` task, and say
-  so in the header of any script that depends on it.
-- Shut down only the one you started: `adb -s <serial> emu kill`.
-- Never install on, restart or stop an emulator you did not start. If you cannot tell whose it
-  is, it is not yours.
+- Start yours on an explicit port (`-port 5560`) and `export ANDROID_SERIAL=emulator-5560` before
+  any `adb` call or Gradle `connected*` task. Say so in the script header.
+- Kill only yours (`adb -s <serial> emu kill`). Never install on, restart or stop another.
 
 ### Install and launch
 
@@ -489,10 +465,9 @@ Watch-specific false alarms:
   a Windows path before it ever reaches the emulator, and the failure doesn't look path-related.
   Prefix the command with `MSYS_NO_PATHCONV=1`, or quote the entire remote command as one argument
   passed to `adb shell`.
-  **Set it on the one command, never `export` it for a script.** Exported, it also stops Git Bash
-  converting the paths that *do* need converting: a test script that later ran
-  `node "$HERE/fake-server.js"` handed Node a `/c/Users/...` path it could not open, the fake
-  servers never started, and nine of eleven steps failed against code that was fine.
+  **Set it on the one command, never `export` it.** Exported, it also stops the conversions that
+  are needed: `node "$HERE/fake-server.js"` got a `/c/...` path it could not open, the test
+  servers never started, and 9 of 11 steps failed against good code.
 
 - **`adb shell run-as cat <file>` corrupts binary files** through CRLF translation on the way back
   to a Windows shell. Use `adb exec-out` instead for anything binary (a database file, an image).
@@ -501,21 +476,13 @@ Watch-specific false alarms:
   a release APK at all. Verify a release build through the UI/logcat, and switch to a debug build
   when you need to inspect on-device files directly.
 
-- **Apostrophes break heredocs and inline scripts in Git Bash.** A `node -e '...'` body or a quoted
-  heredoc containing an apostrophe or a backslash escape fails to parse, and the error points at
-  the wrong line. Write the script, the commit message or the pull-request body to a file and pass
-  the file: `node script.js`, `git commit -F msg.txt`, `gh pr create --body-file body.md`.
+- **Apostrophes break heredocs and `node -e` bodies in Git Bash.** Write scripts, commit messages
+  and pull-request bodies to a file: `node script.js`, `git commit -F`, `gh pr create --body-file`.
 
-- **`python` on a stock Windows machine is the Microsoft Store stub**, which opens the Store and
-  runs nothing. `node` is far more often really there. Check with `--version` before writing a
-  helper in either.
+- **`python` on stock Windows is the Microsoft Store stub.** `node` is more often really there;
+  check with `--version` before writing a helper.
 
-- **`/tmp` in Git Bash is not a path a native program can open.** Node, Java and `adb.exe` do not
-  know MSYS mount points. Use `$TEMP` or a path under the project.
-
-- **`gradlew` needs its executable bit in the index**, or Linux CI cannot run it:
-  `git update-index --chmod=+x gradlew`. Windows has no such bit, so the checkout that created the
-  file never shows the problem (line endings are covered in `releasing.md` §4).
+- **`/tmp` in Git Bash is not a path a native program can open.** Use `$TEMP` or the project.
 
 ---
 
@@ -549,42 +516,31 @@ On the **host** side, on Windows specifically:
   guest gets an instant EOF that looks like the server never even started. Pick a different port
   for anything you stand up locally for the emulator to talk to.
 
-Reach a host-side local server from inside the emulator in one of two ways. **They are not
-interchangeable, and from Android 17 only one of them works without a permission.**
+Reach a host-side server from inside the emulator one of two ways. **They are not interchangeable.**
 
-| Route | Address in the app | What Android thinks it is |
+| Route | Address in the app | Android treats it as |
 |---|---|---|
-| The emulator's host alias | `http://10.0.2.2:<port>/` | A **local-network** address |
+| Host alias | `http://10.0.2.2:<port>/` | A **local-network** address |
 | `adb reverse tcp:<port> tcp:<port>` | `http://127.0.0.1:<port>/` | Loopback |
 
-On an API 37 emulator with an app at `targetSdk` 37, `10.0.2.2` needs the
-`ACCESS_LOCAL_NETWORK` runtime permission (`target-sdk-gotchas.md`). Without it a connection gets
-**no reply at all**: no error, only a timeout, which reads as "the server is down". Below
-`targetSdk` 37 the alias still just works.
+At `targetSdk` 37 on API 37, the alias needs `ACCESS_LOCAL_NETWORK` (`target-sdk-gotchas.md`).
+Without it a connection gets **no reply and no error**, only a timeout.
 
-- To test the app talking to a LAN server, use `10.0.2.2` and grant the permission in the test
-  setup: `adb shell pm grant <pkg> android.permission.ACCESS_LOCAL_NETWORK`. Revoke it
-  (`pm revoke`) to test the denied path.
-- To stand in for a server on the public internet, use `adb reverse` and `127.0.0.1`. It stays
-  reachable when the permission is denied, which is what a cloud endpoint would do.
-- Say in the test which route it uses and why. They exercise different code.
+- Standing in for a LAN server: use the alias and `adb shell pm grant <pkg>
+  android.permission.ACCESS_LOCAL_NETWORK`; `pm revoke` tests the denied path.
+- Standing in for a public server: use `adb reverse`. It stays reachable when the permission is
+  denied, as a cloud endpoint would.
+- The system `DownloadManager` cannot use the alias at all (`permissions-storage-cloud.md`).
 
-**The system `DownloadManager` cannot use the alias at all** on Android 17, whatever the app has
-been granted: see `permissions-storage-cloud.md`. Serve test downloads through `adb reverse`.
-
-### What the emulator can and cannot prove for on-device AI
-
-Decide this before planning tests, so a blocked item is declared early with its exact missing
-piece.
+### What the emulator can prove for on-device AI
 
 | | On the stock emulator |
 |---|---|
-| Gemini Nano (ML Kit GenAI, AICore) | **No.** Reports unavailable. Needs a supported phone with a locked bootloader |
-| A downloaded model run with LiteRT-LM | **Yes.** The runtime ships an `x86_64` library; a 347 MB model loaded in about 3 seconds and answered at a usable speed on the CPU |
-| GPU inference back ends | **Not meaningfully.** The emulator's GPU is not the phone's |
-| "Wi-Fi only" download rules | Pass without setup: the emulator's default network is unmetered Wi-Fi. Test the metered path deliberately |
-| Offline behaviour | **Yes.** `adb shell cmd connectivity airplane-mode enable` gives a real offline state and `adb` keeps working |
-| arm64 native code, real memory limits, thermal throttling | **No.** Needs the phone |
+| Gemini Nano | **No.** Reports unavailable; needs a supported phone |
+| Downloaded model on LiteRT-LM | **Yes**, on CPU: the runtime ships `x86_64`. A 347 MB model loaded in 3 s |
+| GPU back ends, arm64 code, memory limits | **No.** Needs the phone |
+| "Wi-Fi only" download rules | Pass untested: the default network is unmetered |
+| Offline | **Yes.** `adb shell cmd connectivity airplane-mode enable`; `adb` keeps working |
 
 ---
 

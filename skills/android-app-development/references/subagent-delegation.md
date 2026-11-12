@@ -92,37 +92,28 @@ Dispatch enough of these in parallel to cover every finding from an audit pass, 
 
 ## Pattern B2 — A read-only review anchored on the invariants
 
-One review agent, given the project's invariants word for word and told to hunt for ways to break
-them, returned 12 findings on a library of a few thousand lines. Ten were real, including a
-privacy leak through an HTTP redirect, and it named three tests that asserted less than their
-names claimed. The brief that produced that, as a template:
+One reviewer given this brief returned 12 findings on a small library, 10 real, including a
+privacy leak through an HTTP redirect and three tests that asserted less than their names said.
 
 ```
 You are reviewing <module paths>. Do not edit or run anything.
 
 INVARIANTS (verbatim from CLAUDE.md)
-<paste them exactly; do not paraphrase>
+<paste exactly>
 
 HUNT FOR
-<a list of failure classes: a path that skips the approval step; a request that can outlive its
- timeout; an error or log line that can carry user content; a test that cannot fail; ...>
+<failure classes: a path that skips approval; a request that outlives its timeout; a log line
+ that can carry user content; a test that cannot fail; ...>
 
 REPORT
-- Only defects with a concrete trigger. For each: file, line, the input or state that triggers
-  it, and the wrong outcome.
-- Label each CONFIRMED (you traced the path) or PLAUSIBLE (you could not rule it out).
+- Only defects with a concrete trigger: file, line, triggering input or state, wrong outcome.
+- Label each CONFIRMED (path traced) or PLAUSIBLE (not ruled out).
 - Say which areas you read and found clean.
 - At most <N> words.
 ```
 
-Why each line is there: the verbatim invariants stop the reviewer drifting to style; "do not edit
-or run" keeps the working tree yours; the trigger requirement removes the findings nobody can
-act on; CONFIRMED/PLAUSIBLE tells you what to reproduce first; "which areas are clean" separates
-*looked and found nothing* from *did not look*. Reproduce each finding with a failing test before
-fixing it (`testing-and-bugs.md` §6).
-
-Give the reviewer the code, not your conclusions about it. An agent handed a hypothesis tends to
-return it confirmed.
+Give it the code, not your conclusions: a reviewer handed a hypothesis returns it confirmed.
+Reproduce each finding with a failing test before fixing it.
 
 ## Pattern C — Parallel sessions on feature branches, and the integration pass
 
@@ -151,9 +142,8 @@ What makes it work:
   partly-wired implementations of one client, where a binding mistake silently selects the unsafe
   one. Make "grep for a second implementation of anything this branch touched" an explicit step of
   every integration pass, and prune to one per an ADR rather than leaving the loser in the tree.
-- **Two sessions on one machine share its emulators and its `adb`.** Each starts its own emulator
-  on its own port, pins `ANDROID_SERIAL`, and touches no other
-  (`windows-toolchain-and-emulators.md` §4, "Emulators that are not yours").
+- **Sessions on one machine share its emulators**: each starts its own on its own port and
+  touches no other (`windows-toolchain-and-emulators.md` §4).
 
 ## When to use which
 

@@ -126,36 +126,23 @@ Practical notes pulled from a working test plan:
 - **Deriving tap coordinates from a UI dump is the most fragile part of this harness.** Before writing one, consider `android layout` / `android screen resolve` from the Android CLI, or an MCP device-control server — `ecosystem.md` §4 ranks the options.
 - For emulator work broadly, the recurring instruction is simply: *"Use the android simulator that we've used for our other android apps to run the apk"* — i.e., standardize on one emulator/AVD across projects rather than reconfiguring per-app, and *"After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature and function"* as the closing step of every implementation pass.
 
-## 3a. Scripted journeys through launch extras and one log line
+## 3a. Scripted journeys: launch extras in, one log line out
 
-For a library's sample app, or any feature that is mostly network and state and hardly UI, there
-is a third format that is neither a Journey nor a tap script. Give the debug build two things:
+For a library's sample app, or a feature that is mostly network and state, give the debug build
+two things: every setting readable from launch extras, and one content-free result line in logcat
+(`RESULT Answer by=remote tookMs=412`: ids, types and timings, never user content). A bash script
+then runs `adb shell am start` per scenario, waits for the line and asserts on it. No layout, no
+flakiness.
 
-- **every setting readable from launch extras** (`am start --es url … --ez autoSend true`), so a
-  script can put the app in any configuration without touching the screen;
-- **one content-free result line in logcat** per run (`RESULT Answer by=remote tookMs=412`), plus
-  one line per significant step, carrying ids, types and timings and never user content.
-
-A bash script then drives each scenario with `adb shell am start`, waits for the result line, and
-asserts on it. Nine to eleven scenarios ran this way in well under a minute each, with no flakiness
-from layout. What mattered in practice:
-
-- Pin the device with `ANDROID_SERIAL` and say so in the script header
-  (`windows-toolchain-and-emulators.md` §4).
-- `adb shell` re-splits its arguments. `am start --es key "two words"` arrives as two arguments;
-  pass the whole remote command as one quoted string with the spaces escaped.
-- `am force-stop` does **not** cancel `DownloadManager` downloads. That makes it a good way to
-  test that a download survives the app being killed.
-- `cmd connectivity airplane-mode enable|disable` gives a real offline state. Restore it in a
-  `trap`, or one failed run leaves the device offline for the next.
-- **A scenario must not depend on what an earlier one left on the device.** A later journey left
-  a downloaded model behind and silently changed the result of an earlier one on the next run.
-  Start each scenario from a state it sets itself.
-- When a control must be tapped, find it by its on-screen text in a `uiautomator dump`, not by
-  coordinates, and press Back to hide the keyboard only if the keyboard is showing
-  (`dumpsys input_method | grep mInputShown=true`): otherwise Back closes the app.
-- Read one screenshot back per journey. It caught two things the logs did not: log lines in a
-  misleading order, and a prompt mangled by shell quoting.
+- Pin the device with `ANDROID_SERIAL` (`windows-toolchain-and-emulators.md` §4).
+- `adb shell` re-splits arguments: pass the remote command as one quoted string.
+- `am force-stop` does **not** cancel `DownloadManager` downloads, so it tests kill-survival.
+- Airplane mode (`cmd connectivity airplane-mode enable`) is a real offline state. Restore it in a
+  `trap`.
+- A scenario sets its own starting state. One journey's leftover download changed another's result.
+- To tap, find the control by its text in a `uiautomator dump`, not by coordinates. Press Back to
+  hide the keyboard only if `dumpsys input_method` shows `mInputShown=true`; otherwise Back
+  closes the app.
 
 ## 3b. Screenshot testing: catching what a log line cannot
 
@@ -171,40 +158,28 @@ Record with `./gradlew recordRoborazziDebug`, verify with `./gradlew verifyRobor
 
 Highest-value screens to pin, in order: **every empty/first-run state** (the rule above), the alert/status ladder if colour carries meaning (`DESIGN_TOKENS.md`), and each error state. These are precisely the screens that are hard to reach by hand and easy to break silently.
 
-## 3c. Fakes hide real failures: keep one test against the real thing
+## 3c. Keep one test against the real thing beside every fake
 
-Three times in one project a fake passed and the real thing did not:
+Three fakes passed in one project where the real thing did not: a fake model file (the real one
+verified, then failed to load, because the runtime reads the format from the file extension); a
+hand-written streaming server that never streamed (Node's `req.on("close")` fires when the request
+body ends; use `res.on("close")`); and a real reasoning model that stayed silent for up to two
+minutes, a shape no fake had.
 
-- A fake 8 MB "model" passed every download test. The first real model verified its checksum and
-  then failed to load, because the runtime identifies the format by file extension and the code
-  had saved it under a different one.
-- A hand-written fake streaming server stopped streaming at once. In Node, `req.on("close")` fires
-  when the request body ends, not when the client goes away; it has to be `res.on("close")`. Every
-  journey step failed and the code under test looked broken.
-- The first run against a real server met a reasoning model that streamed only reasoning for 28
-  seconds to over two minutes before its first word. No fake had that shape, and handling it
-  needed a new event in the public API.
-
-So:
-
-- **Every integration point gets at least one opt-in test against the real thing**, skipped
-  unless its settings are present.
-- **A one-token reply does not prove streaming.** Ask for a longer answer and require several
-  chunks.
-- **Check a fake with `curl` before blaming the code under test.**
-- **Keep the secrets for those tests out of the build.** Read the URL, model and key from a
-  git-ignored `.env` in the repository root, loaded by Gradle into the test process only, with a
-  committed `.env.example` naming the variables. Make only *whether a value is set* a task input,
-  never the value, so it cannot reach the build cache or a build scan. Diagnostics print variable
-  names, counts and timings, never values or model output.
+- Every integration point gets an opt-in test against the real service, skipped unless configured.
+- One token does not prove streaming. Require several chunks.
+- `curl` a fake before blaming the code under test.
+- Secrets for those tests live in a git-ignored `.env`, loaded into the test process only, with a
+  committed `.env.example`. Make *whether* a value is set a task input, never the value, so it
+  cannot reach the build cache. Print names and counts, never values.
 
   ```kotlin
   val dotEnv = rootProject.file(".env").takeIf { it.exists() }?.readLines().orEmpty()
       .mapNotNull { l -> l.trim().takeIf { it.isNotEmpty() && !it.startsWith("#") }?.split("=", limit = 2) }
       .filter { it.size == 2 }.associate { it[0].trim() to it[1].trim() }
   tasks.withType<Test>().configureEach {
-      dotEnv.forEach { (k, v) -> if (System.getenv(k) == null) environment(k, v) }   // the real environment wins
-      inputs.property("contractTestsConfigured", dotEnv.keys.sorted().joinToString(","))
+      dotEnv.forEach { (k, v) -> if (System.getenv(k) == null) environment(k, v) }
+      inputs.property("envKeys", dotEnv.keys.sorted().joinToString(","))
   }
   ```
 
@@ -249,9 +224,9 @@ Every entry below was hit on Windows inside one week on a single project.
 | **A Gradle task touching `Project` inside `doLast`** | Passes for days, then fails — it only breaks when the build **stores** a new configuration-cache entry, not when it reuses one | Resolve `Project` values into local `val`s at configuration time and close over those. To test it at all, force a cache miss (`--no-configuration-cache`, or change an input) rather than trusting a green run |
 | **A module whose source dir is not picked up** | Compiles **empty** and the build passes. With nothing depending on it yet, there is no error anywhere | An artifact check, not a build check: for a Room module assert the exported schema JSON exists; otherwise assert the expected classes are in the output jar/dex |
 | **Counting `<testcase name=` in JUnit XML** | Counts **declared** tests, not passing ones. A failing case has a `<failure>` child and is otherwise identical, so a naive grep prints a clean list of PASS lines for a run that failed | Read the `failures=` and `errors=` attributes on `<testsuite>`, or parse for `<failure>`/`<error>` children |
-| **A green build with the build cache on** | A full `clean build` reported success in 2 seconds: every test task had been restored from the cache and none ran | For any run that counts as proof, add `--rerun-tasks` and read the counts from the XML reports |
-| **A JUnit test that does not return `Unit`** | `fun x() = runBlocking { … assertIs<T>(…) }` returns the asserted value, and JUnit silently ignores a test method with a return value. Two tests never ran, were not reported as skipped, and were the two most important in the module | Write `= runBlocking<Unit> { … }` or `= runTest { … }`, and compare the number of `@Test` annotations in each file with the number executed |
-| **A library module that "adds a provider"** | It also added a 23 MB native library per ABI to every app that depended on it, 50 MB in an unfiltered APK. Nothing in the build output says so | `unzip -lv app.apk \| sort -k1 -n -r \| head` after adding any dependency with native code, and `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh --expect-abi` on the release build. Put heavy native runtimes in their own optional module |
+| **A green build with the build cache on** | `clean build` succeeded in 2 seconds: every test task was restored from cache and none ran | `--rerun-tasks` for any run that counts as proof, then read the counts in the XML |
+| **A JUnit test that does not return `Unit`** | `fun x() = runBlocking { … assertIs<T>(…) }` returns a value, so JUnit ignores it without reporting a skip | `= runBlocking<Unit> { … }` or `= runTest { … }`; compare `@Test` count with tests executed |
+| **A dependency with native code** | A library module quietly added 23 MB per ABI to every app using it, 50 MB in an unfiltered APK | `unzip -lv app.apk \| sort -n -r \| head` after adding one; `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh --expect-abi` on the release build |
 
 Three of these have a documented cause worth knowing:
 
@@ -286,15 +261,10 @@ script in `scripts/`:
 3. **Remove the violation.**
 4. **Confirm it passes.**
 
-**Make it a routine, not an occasion.** For tests, the loop is: commit; change one line of the
-code under test with `sed` to plant the violation the test claims to catch; run the tests; confirm
-the *named* test fails; `git checkout -- .`. It takes seconds per violation. Twenty of them in one
-project found tests that could not fail.
-
-The commonest way a test cannot fail: **an assertion placed inside code whose failures the system
-under test is designed to absorb**, such as a callback or a hook that the library wraps in a
-catch-all so that a misbehaving app cannot break it. The assertion throws, the library swallows
-it, the test passes. Record a flag or a value there and assert outside.
+**For tests, make it a loop:** commit, plant one violation with `sed`, run, confirm the *named*
+test fails, `git checkout -- .`. Seconds each; twenty of them found tests that could not fail.
+The usual cause is **an assertion inside code whose exceptions the system under test swallows**
+(a callback or hook it wraps in a catch-all). Record a value there and assert outside.
 
 A check only ever seen passing is indistinguishable from a check that cannot fail, and the second
 kind is worse than none: it is a green light nobody is watching. This is the same discipline the
