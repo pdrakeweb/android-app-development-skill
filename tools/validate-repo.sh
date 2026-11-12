@@ -79,6 +79,17 @@ if need node; then
   # Anything it emits must be parseable, or the harness sees garbage.
   printf '%s' "$fires" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{JSON.parse(s)})' \
     && ok "emits valid JSON" || bad "emitted output is not valid JSON"
+
+  # The output filters: a failure must survive them, noise must not, and the
+  # test must itself be seen failing on a hook that drops compiler errors.
+  for f in hooks/gradle-quiet.js "$SKILL_DIR"/scripts/qrun.js tools/test-gradle-quiet.js; do
+    node --check "$f" && ok "syntax: $f" || bad "syntax: $f"
+  done
+  if node tools/test-gradle-quiet.js >/tmp/test-gradle-quiet.out 2>&1; then
+    ok "output filters keep failures and drop noise ($(grep -c '^ok' /tmp/test-gradle-quiet.out) checks)"
+  else
+    bad "output filter test:"; grep -v '^ok' /tmp/test-gradle-quiet.out | sed 's/^/        /'
+  fi
 fi
 
 # ---- JSON --------------------------------------------------------------------

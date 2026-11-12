@@ -37,8 +37,9 @@ wins.** Install this one *alongside* them, not instead of them.
 | `references/testing-and-bugs.md` | The adversarial audit prompt, scoped parallel fix agents, MASVS vocabulary, test plans, scripted journeys, screenshot testing, real-thing tests beside fakes, bug-report structure |
 | `references/permissions-storage-cloud.md` | Runtime permissions, local storage, schema/migration discipline, sync, downloads, cloud and LLM hardening, hybrid inference |
 | `references/subagent-delegation.md` | Surface selection, research delegation, scoped fix agents, an invariant-anchored review brief, parallel-session integration |
-| `scripts/` | Deterministic checks — preflight, install verification, artifact inspection |
-| `hooks/` | Advisory PostToolUse guardrails (never blocking) |
+| `references/context-economy.md` | Cutting token use without losing information: `CLAUDE.md` as an index, deny rules for build output, filtering Gradle output to failures and a summary, retrofitting an existing repository |
+| `scripts/` | Deterministic checks — preflight, install verification, artifact inspection — and `qrun.js`, a wrapper that prints only what failed |
+| `hooks/` | PostToolUse hooks (never blocking): advisory guardrails, and a filter that cuts Gradle output to failures and a summary |
 
 ## The process it runs
 
@@ -118,6 +119,16 @@ whose result isn't asserted, an `onBackPressed()` override that `targetSdk` 36 w
 empty `catch` block, `fallbackToDestructiveMigration`. It is **advisory only**: it always exits 0
 and never blocks a tool call, because a guardrail that blocks on a false positive just trains you
 to disable it. Requires `node` on `PATH`. Delete `hooks/` if you don't want it.
+
+A second hook, `gradle-quiet.js`, lowers what a session costs. A raw Gradle run is usually the
+largest thing a session puts into context, and every later turn pays to re-read it. The hook
+rewrites Gradle output from the Bash and PowerShell tools before the model sees it: a passing build
+becomes its summary lines, a failing build keeps every failed task's output, every compiler error
+and the failure report. In testing a 56 KB task listing came back as 2 KB. The full output is
+always saved and its path printed, output of 40 lines or fewer is left alone, anything the hook
+does not recognise is left alone, and `GRADLE_RAW` anywhere in a command turns it off for that run.
+`references/context-economy.md` covers the rest: keeping `CLAUDE.md` short, and deny rules that
+keep the file tools out of build intermediates.
 
 ## Validating the repo
 

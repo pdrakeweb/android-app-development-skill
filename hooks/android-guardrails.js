@@ -48,6 +48,25 @@ function inspect(payload) {
 
   if (tool === 'Bash') notes.push(...inspectBash(String(input.command || '')));
 
+  // Raw tool output is the biggest avoidable context cost. Gradle is cut down by
+  // gradle-quiet.js in this same plugin; this covers the other noisy commands.
+  if (tool === 'Bash' || tool === 'PowerShell') {
+    const cmd = String(input.command || '');
+    const resp = payload.tool_response || '';
+    const size = typeof resp === 'string'
+      ? resp.length
+      : Number(resp.persistedOutputSize) || String(resp.stdout || '').length + String(resp.stderr || '').length;
+    const noisy = /\badb\b|\blogcat\b|\bdumpsys\b|\buiautomator\b/.test(cmd);
+    if (noisy && !/qrun/.test(cmd) && size > 8000) {
+      notes.push(
+        'That command put ~' + Math.round(size / 1000) + 'K characters of raw output into context, and ' +
+        'every later turn re-reads it. Cap it at the source (`adb logcat -d -t 200 *:E`, a tag or pid ' +
+        'filter, `dumpsys <service>` piped through a narrow grep), or run it through ' +
+        '`node ${CLAUDE_SKILL_DIR}/scripts/qrun.js -- <command>` (context-economy.md §3).'
+      );
+    }
+  }
+
   if (tool === 'Edit' || tool === 'Write' || tool === 'MultiEdit') {
     const path = String(input.file_path || '');
     // Only look at text this call is ADDING, so we don't nag about code being removed.
