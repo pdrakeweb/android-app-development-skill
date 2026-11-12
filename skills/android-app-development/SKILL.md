@@ -1,6 +1,6 @@
 ---
 name: android-app-development
-version: 0.7.0
+version: 0.9.0
 description: Guides building native Android apps (Kotlin, Jetpack Compose, Hilt) end to end — a structured intake interview, a spec, a plan approved before any code, an adversarial audit, an agent-executable test suite, and a beta release. Use when starting a new Android app, resuming or reviewing an existing one, setting up an Android toolchain or phone/tablet/Wear OS emulator, auditing before release, writing agent-executable test scenarios, triaging a bug report from real hardware, or specifying permissions, storage, or cloud sync. Do NOT use for iOS, Flutter, React Native or other cross-platform frameworks, for general Kotlin or JVM questions unrelated to an Android app, or for a one-off Android API question that needs an answer rather than a project.
 license: Apache-2.0
 compatibility: Builds Android apps with the JDK, Android SDK command-line tools and an emulator or device. The bundled scripts are bash and need adb, aapt2 and apksigner on PATH. Android CLI's emulator command does not work on Windows; AVDs are created manually there.
@@ -28,6 +28,8 @@ Where a lesson came from somewhere else, it's described rather than named.
 ## Start here: someone asked for an app
 
 **When the request is "build me an Android app" — or anything that amounts to starting a new app — do not scaffold, do not choose dependencies, and do not write code. Run the intake interview first** (`references/intake-interview.md`), then follow the phases in `references/lifecycle.md`.
+
+**Building a library** whose repository already holds its design? Skip the interview: `references/lifecycle.md` has a library path.
 
 The interview opens with a calibration question asked on its own, then works through up to ten broad-to-narrow questions in batches of 2–4 — fewer at novice levels — plus two closing questions asked every time and follow-ups generated from the answers. It exists because every question in it traces back to something that was built wrong, audited as a defect when it was actually a deliberate decision, or discovered halfway through implementation when it should have been decided in the first ten minutes.
 
@@ -82,7 +84,7 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 | **Any conversation with a human at all** — how much to explain, which words to use, how much to decide for them | `references/user-calibration.md` |
 | Someone asked for a new app, or a rough idea needs turning into a spec | `references/intake-interview.md` |
 | Mocking up screens, choosing a palette, generating a theme, or reviewing how the built app looks | `references/design-phase.md` |
-| Running the end-to-end process; what artifact each phase produces and what "done" means | `references/lifecycle.md` |
+| Running the end-to-end process; what artifact each phase produces and what "done" means; building a library | `references/lifecycle.md` |
 | Pinning versions, choosing dependencies that work together, checking a Play deadline, or diagnosing an AGP 9 / API 36 breakage | `references/platform-currency.md` |
 | Raising `targetSdk`, or an app that "worked yesterday" broke after a target bump or an Android update | `references/target-sdk-gotchas.md` |
 | Choosing a Google skill to defer to, using Android CLI, or picking a test/device-control tool | `references/ecosystem.md` |
@@ -90,7 +92,7 @@ Three consequences that bite immediately, all detailed in `platform-currency.md`
 | Setting up a machine, or creating/booting phone, tablet, or Wear OS emulators | `references/windows-toolchain-and-emulators.md` |
 | Auditing an app before release, fixing audit findings, processing a real-hardware bug report, writing a test plan, or deciding whether to believe a tool that reported success | `references/testing-and-bugs.md` |
 | Setting up versioning, a tag-triggered release build, signing in CI, or publishing outside Play | `references/releasing.md` |
-| Specifying permissions, local storage, or cloud backup/sync | `references/permissions-storage-cloud.md` |
+| Specifying permissions, local storage, downloads, or cloud backup/sync; sending user data to a user-configured server; on-device AI | `references/permissions-storage-cloud.md` |
 | Delegating a large review or a research question to a subagent, or fanning out fixes across multiple files safely | `references/subagent-delegation.md` |
 
 ## House rules worth stating explicitly
@@ -100,6 +102,7 @@ House rules that apply to every project:
 - **Personal, non-distributed APKs bake in live credentials on purpose.** This is a documented exception, not an oversight an audit should keep re-flagging — but confirm this framing explicitly with whoever's asking before assuming it, since it does NOT apply to anything that will be distributed, shared, or published (see `permissions-storage-cloud.md` for the boundary and what still needs protecting even in a personal build). Distribution also raises a **developer-verification** question — `platform-currency.md` §6.
 - **A safety- or correctness-critical invariant, once established, gets checked by name in every subsequent audit prompt.** (Example from `field-assistant`: "emergency content renders verbatim, never through the LLM" appears in nearly every audit and fix-agent prompt for that app, worded identically each time.) If your app has an analogous non-negotiable rule, name it explicitly and repeat it verbatim across prompts rather than trusting it to be inferred.
 - **A button, action, or field that does nothing with no explanation is treated as the worst failure mode**, worse than an error message. Every "why didn't this work" bug report in the corpus traces back to a silent no-op somewhere. Default to failing loudly.
+- **A fix the app names is a control the app has.** An error that says "sign in again" or "set this device up again" with nothing to press is the same dead control, one level up, and reviews miss it because nothing is wrong, only absent. Before calling a milestone done, list what was designed and not built (`testing-and-bugs.md` §1).
 - **A denied permission degrades a feature; it never produces a dead control.** Classify every permission essential or enhancing — enhancing is the default and the burden of proof is on calling anything essential — request it from the feature that needs it rather than at startup, then make denial leave the workflow completing, say plainly what is missing, and offer an inline retry that still works after the prompt is permanently spent. It is the readiest way an app grows one: the control is right there, it looks live, and the permission behind it is gone (`permissions-storage-cloud.md`).
 - **Fail closed, and never weaken a guard to make something compile.** Every guard in the corpus exists because the alternative failed *open* and silently. When a value can't be computed, say so — never return the safe-looking one.
 - **A value computed from nothing is never displayed as a finding.** Empty states say they're empty. An empty first install is the cheapest possible test of this, and it has caught fabricated numbers twice.
@@ -121,3 +124,4 @@ Prose instructions get skipped on turn forty. These do not — run them instead 
 | `${CLAUDE_SKILL_DIR}/scripts/preflight.sh` | Does this machine's toolchain match the pins above, and what does the project actually declare? |
 | `${CLAUDE_SKILL_DIR}/scripts/verify-install.sh` | Did the APK install, launch, reach the foreground, and survive without crashing? **Wipes the app's data first** — pass `--keep-data` when that matters (`lifecycle.md` Phase 3) |
 | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh` | Does the release APK carry a v2+ signature, and the ABIs and targetSdk you expected? The signature check is unconditional; ABI and targetSdk are only *asserted* when you pass `--expect-abi` / `--expect-target`, and only reported otherwise. It reads APKs, not `.aab` bundles |
+| `${CLAUDE_SKILL_DIR}/scripts/fit-emulator-windows.ps1` | Are the emulator windows a person must use fully on screen and inside the usable area? Windows only; moves and resizes them, then prints where each ended up |

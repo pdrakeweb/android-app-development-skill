@@ -30,6 +30,9 @@ Don't ask for "a code review." Ask for an adversarial audit against a named list
 - **Android API misuse** — deprecated APIs, missing runtime permission requests (declaring a dangerous permission in the manifest has not been enough since **API 23**), missing notification channels, `FileUriExposedException`, wrong `FLAG_ACTIVITY_*` use.
 - **Build/dependency issues** — version conflicts, missing R8/ProGuard keep rules for reflection/serialization, debug code leaking into release, wrong minSdk assumptions.
 - **Platform-currency breakage** — the API 36 behaviours in `platform-currency.md` §4, which produce defects that look like ordinary bugs: an `onBackPressed()` override that is never called (so an unsaved-work guard is silently gone), content drawing under the system bars because insets aren't handled, a portrait-locked layout handed a landscape tablet window. Treat a surviving `onBackPressed()` at `targetSdk` 36 as **High** — it is a guard that fails open and silently, which is this corpus's defining failure mode.
+- **A named fix with nothing behind it** — for every fix, action or next step the app or library names to the person ("sign in again", "set this device up again", "scan this code"): where is the code that performs it, and where is the control? Reviews and simulations do not flag this, because nothing is wrong; something is absent. A library's error type offered a fix for two milestones before any code could perform it. List what was designed and not built, on purpose.
+- **Actions that cancel themselves** — work started in a composable's coroutine scope is cancelled when that composable leaves. Ask of every button: can this action make its own screen or form go away, or replace the object the screen is keyed on (`key(engine) { Screen() }`)? If so it belongs to the activity or view model scope. Found twice in one app, both times only when the real button was pressed; tests that drove the app through debug commands passed.
+- **Secret fields and restores** — every secret-entry field: can a password manager generate, save and fill it? What happens when the app is restored onto a new phone? (`permissions-storage-cloud.md`.)
 
 Mandate a structured output — either a written report (`audit/AUDIT_REPORT.md`, with Critical/High/Medium/Low counts and one entry per finding: severity, file:line, category, description, reproduction, fix) or, for a more surgical per-tree audit, inline findings in a strict repeating block format:
 
@@ -126,6 +129,45 @@ Practical notes pulled from a working test plan:
 - **Deriving tap coordinates from a UI dump is the most fragile part of this harness.** Before writing one, consider `android layout` / `android screen resolve` from the Android CLI, or an MCP device-control server — `ecosystem.md` §4 ranks the options.
 - For emulator work broadly, the recurring instruction is simply: *"Use the android simulator that we've used for our other android apps to run the apk"* — i.e., standardize on one emulator/AVD across projects rather than reconfiguring per-app, and *"After running all the fixes launch the APK in the emulator... and perform a full functionality test of every feature and function"* as the closing step of every implementation pass.
 
+## 3a. Scripted journeys: launch extras in, one log line out
+
+For a library's sample app, or a feature that is mostly network and state, give the debug build
+two things: every setting readable from launch extras, and one content-free result line in logcat
+(`RESULT Answer by=remote tookMs=412`: ids, types and timings, never user content). A bash script
+then runs `adb shell am start` per scenario, waits for the line and asserts on it. No layout, no
+flakiness.
+
+- Pin the device with `ANDROID_SERIAL` (`windows-toolchain-and-emulators.md` §4).
+- `adb shell` re-splits arguments: pass the remote command as one quoted string.
+- `am force-stop` does **not** cancel `DownloadManager` downloads, so it tests kill-survival.
+- Airplane mode (`cmd connectivity airplane-mode enable`) is a real offline state. Restore it in a
+  `trap`.
+- A scenario sets its own starting state. One journey's leftover download changed another's result.
+- To tap, find the control by its text in a `uiautomator dump`, not by coordinates. Press Back to
+  hide the keyboard only if `dumpsys input_method` shows `mInputShown=true`; otherwise Back
+  closes the app.
+- **Press the real control at least once per flow.** A journey that drives setup through launch
+  extras never runs the button's code path. Two bugs (above, "actions that cancel themselves")
+  lived behind buttons the journey did not press.
+- **`uiautomator dump` sees only the top window.** With a system sheet over the app, every check
+  on the app's text fails although the app is right; the keyboard's suggestion strip and autofill
+  dropdowns are never in it. Screenshot (`adb exec-out screencap -p`) before concluding, and
+  dismiss a sheet before asserting.
+- **Never tap an unidentified chip on the keyboard strip.** It also offers the clipboard, which
+  held an account password the person had just pasted elsewhere.
+- **Do not find "the content" by subtracting known labels** from the screen text. Adding one
+  button failed six checks against correct data. Mark content with something the app controls.
+- **Assert what stays true.** An app that syncs on foreground made "not synced yet" false two
+  seconds after launch. Use a longer wait for network storage than for local, and a longer one
+  for the first step after `adb install` than between warm steps.
+- **Simulate a restored database without root** on a debug build: `am force-stop`, then
+  `run-as <pkg> cp databases/app.db* files/bak/`, and copy back later. The `-wal` and `-shm`
+  files go with the `.db`, or recent writes are missing.
+- **The script prints its own totals and exits non-zero on any failure.** Report those numbers;
+  a count given from memory was wrong by two. Commit the output beside the scenario.
+- **Rewrite a journey script rather than patch it with layers of `sed`**, and read `git diff`
+  before committing any scripted edit: one range delete removed a neighbouring line.
+
 ## 3b. Screenshot testing: catching what a log line cannot
 
 The house rule that *a value computed from nothing is never displayed as a finding* is a **visual** invariant, and the ADB harness can only check it indirectly by grepping a UI dump for a string. Golden-image screenshot tests check it directly, and catch the regression the moment it appears.
@@ -139,6 +181,54 @@ The house rule that *a value computed from nothing is never displayed as a findi
 Record with `./gradlew recordRoborazziDebug`, verify with `./gradlew verifyRoborazziDebug`. **For a headless agent session with no display, Roborazzi is the right default** — it is the only option that gives a pixel diff without a device.
 
 Highest-value screens to pin, in order: **every empty/first-run state** (the rule above), the alert/status ladder if colour carries meaning (`DESIGN_TOKENS.md`), and each error state. These are precisely the screens that are hard to reach by hand and easy to break silently.
+
+## 3c. Keep one test against the real thing beside every fake
+
+Three fakes passed in one project where the real thing did not: a fake model file (the real one
+verified, then failed to load, because the runtime reads the format from the file extension); a
+hand-written streaming server that never streamed (Node's `req.on("close")` fires when the request
+body ends; use `res.on("close")`); and a real reasoning model that stayed silent for up to two
+minutes, a shape no fake had.
+
+- Every integration point gets an opt-in test against the real service, skipped unless configured.
+- One token does not prove streaming. Require several chunks.
+- `curl` a fake before blaming the code under test.
+- Secrets for those tests live in a git-ignored `.env`, loaded into the test process only, with a
+  committed `.env.example`. Make *whether* a value is set a task input, never the value, so it
+  cannot reach the build cache. Print names and counts, never values.
+- A Drive backend passed 13 tests against a hand-written fake; the first real run then needed
+  three fixes, all in the app's use of Google sign-in. Until one run against the real service,
+  report "tested against a fake only" in those words.
+
+  ```kotlin
+  val dotEnv = rootProject.file(".env").takeIf { it.exists() }?.readLines().orEmpty()
+      .mapNotNull { l -> l.trim().takeIf { it.isNotEmpty() && !it.startsWith("#") }?.split("=", limit = 2) }
+      .filter { it.size == 2 }.associate { it[0].trim() to it[1].trim() }
+  tasks.withType<Test>().configureEach {
+      dotEnv.forEach { (k, v) -> if (System.getenv(k) == null) environment(k, v) }
+      inputs.property("envKeys", dotEnv.keys.sorted().joinToString(","))
+  }
+  ```
+
+## 3d. What the JVM can prove, and what needs a device
+
+Robolectric's SQLite is the real engine: triggers, `RAISE(ABORT, ...)`, `julianday('now')`,
+foreign keys and `PRAGMA table_info` behaved as on a device (Robolectric 4.17, AGP 9.5.1, JDK 25
+host). Write a one-test probe of the thing you depend on before any code that depends on it.
+
+| Robolectric on the JVM is enough | Needs an emulator or phone |
+|---|---|
+| SQLite behaviour, Room, migrations with table rebuilds | Android Keystore (absent under Robolectric): `androidTest` |
+| WorkManager scheduling, with `work-testing` | Storage semantics: app-specific external storage has no hard links |
+| Pure logic, simulations | Play services, sign-in, autofill, anything a person sees |
+
+- Robolectric tests are JUnit 4. A contract suite that must run there and under JUnit 5 carries no
+  annotations: plain methods that throw `AssertionError`, plus a name-to-check map each framework
+  wraps.
+- A fallback for a missing file-system feature caught the wrong exception type and was found by
+  review, not by a JVM test. Only the emulator exercised that storage.
+- **Untested, say so:** Android 8.0 and 8.1 ship an old Bouncy Castle under `org.bouncycastle`.
+  Run a bundled crypto provider on the lowest supported API before claiming it.
 
 ## 4. Real-hardware bug reports
 
@@ -181,6 +271,9 @@ Every entry below was hit on Windows inside one week on a single project.
 | **A Gradle task touching `Project` inside `doLast`** | Passes for days, then fails — it only breaks when the build **stores** a new configuration-cache entry, not when it reuses one | Resolve `Project` values into local `val`s at configuration time and close over those. To test it at all, force a cache miss (`--no-configuration-cache`, or change an input) rather than trusting a green run |
 | **A module whose source dir is not picked up** | Compiles **empty** and the build passes. With nothing depending on it yet, there is no error anywhere | An artifact check, not a build check: for a Room module assert the exported schema JSON exists; otherwise assert the expected classes are in the output jar/dex |
 | **Counting `<testcase name=` in JUnit XML** | Counts **declared** tests, not passing ones. A failing case has a `<failure>` child and is otherwise identical, so a naive grep prints a clean list of PASS lines for a run that failed | Read the `failures=` and `errors=` attributes on `<testsuite>`, or parse for `<failure>`/`<error>` children |
+| **A green build with the build cache on** | `clean build` succeeded in 2 seconds: every test task was restored from cache and none ran | `--rerun-tasks` for any run that counts as proof, then read the counts in the XML |
+| **A JUnit test that does not return `Unit`** | `fun x() = runBlocking { … assertIs<T>(…) }` returns a value, so JUnit ignores it without reporting a skip | `= runBlocking<Unit> { … }` or `= runTest { … }`; compare `@Test` count with tests executed |
+| **A dependency with native code** | A library module quietly added 23 MB per ABI to every app using it, 50 MB in an unfiltered APK | `unzip -lv app.apk \| sort -n -r \| head` after adding one; `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh --expect-abi` on the release build |
 
 Three of these have a documented cause worth knowing:
 
@@ -214,6 +307,17 @@ script in `scripts/`:
 2. **Confirm it exits non-zero**, and that the message names the file and line.
 3. **Remove the violation.**
 4. **Confirm it passes.**
+
+**For tests, make it a loop:** commit, plant one violation with `sed`, run, confirm the *named*
+test fails, `git checkout -- .`. Seconds each; twenty of them found tests that could not fail.
+The usual cause is **an assertion inside code whose exceptions the system under test swallows**
+(a callback or hook it wraps in a catch-all). Record a value there and assert outside.
+
+**Green on the first run is a warning, not a result.** Over four milestones of one library, 35
+bugs were planted this way after suites passed first time (a 10,000-run simulation among them).
+One survived and showed a missing test. If the `sed` change did not apply, say so; do not count
+it. A simulator still has blind spots its author cannot see: ask a reviewer for them
+(`subagent-delegation.md`, Pattern B2).
 
 A check only ever seen passing is indistinguishable from a check that cannot fail, and the second
 kind is worse than none: it is a green light nobody is watching. This is the same discipline the

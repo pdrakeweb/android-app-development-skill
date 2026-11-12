@@ -60,6 +60,9 @@ and pins a minimum. *"Android Gradle plugin 9.0 now has a runtime dependency on 
 (<https://developer.android.com/build/releases/agp-9-0-0-release-notes>). Re-read that page rather
 than the migration guide when you need the number; the migration guide does not carry it.
 
+**Observed 2026-11-11, one working set, not a re-verification of the table:** AGP 9.5.1,
+Gradle 9.9.1, Kotlin 2.4.21, KSP 2.3.13, Hilt 2.60.1, Compose BOM 2026.09.00, compileSdk 37.
+
 ---
 
 ## 2 · How to re-verify when this file is stale
@@ -73,6 +76,10 @@ re-verify before scaffolding** rather than trusting it. Three sources, in order:
 2. <https://developer.android.com/about/versions> — is the newest API level stable or beta?
 3. Google's own `agp-9-upgrade` skill, which is maintained against the toolchain rather than
    written down once (`ecosystem.md`).
+
+**For the newest released version, read the repository, not a web page** (a "get started" page
+was a beta behind): the artifact's `maven-metadata.xml`, taking the newest `<version>` that is
+digits and dots only, and <https://services.gradle.org/versions/current> for Gradle.
 
 **When this file and a Google skill disagree, the Google skill wins.** This one is a snapshot; that
 one is maintained. Correct this file when you notice.
@@ -100,6 +107,11 @@ not name the real cause. The changes that bite:
   `android.r8.integratedResourceShrinking` and `android.enableNewResourceShrinker.preciseShrinking`
   (<https://developer.android.com/build/releases/agp-9-0-0-release-notes>).
 - **KMP modules move to `com.android.kotlin.multiplatform.library`**, off `com.android.library`.
+
+Also true under built-in Kotlin: `kotlin { explicitApi() }` works in an Android library with no
+Kotlin plugin applied; JUnit 5 unit tests need
+`testOptions { unitTests.all { it.useJUnitPlatform() } }` or none are found and the task passes;
+`compileSdk = 37` resolves a platform installed as `android-37.0`.
 
 **Do not hand-write an AGP 9 migration from this list.** It is here so you recognise the symptoms.
 For the actual work, install Google's `agp-9-upgrade` skill (`ecosystem.md`) — it is maintained

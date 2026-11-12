@@ -230,6 +230,11 @@ for. They are complements, not substitutes. Install one *with* this skill when i
 | `hamen/compose_skill` | An evidence-based Compose audit: 0–100 score, per-category scores, top-three fixes, every deduction cited to an official page |
 | `skydoves/android-skills-mcp` | `android/skills` as an MCP server + CLI packager, bundled offline snapshot, `npx`-runnable |
 | `Kotlin/kotlin-agent-skills` | JetBrains' official Kotlin skills, incl. AGP 9 migration for KMP |
+| `pdrakeweb/llm-tiers` (`skills/llm-tiers/SKILL.md`) | A library and usage skill for AI text generation on the device (Gemini Nano, a downloaded model) or any OpenAI-compatible endpoint, with fallback, approval before personal data leaves, and typed results. Not on Maven Central yet: used from a checkout via `publishToMavenLocal` |
+
+**Read an unfamiliar library's API from the artifact, not a page or memory.** Unpack the AAR
+Gradle resolved and run `javap -cp classes.jar <class>`. A minute's work; it settled two beta APIs
+whose pages were stale or missing. `unzip -lv` on the AAR also shows its native libraries per ABI.
 
 **The one convention worth stealing outright** is `hamen/compose_skill`'s: **cite every finding to a
 specific official page.** A finding with a citation survives a disagreement; a finding without one

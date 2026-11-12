@@ -111,6 +111,18 @@ Falls back to <https://adoptium.net/temurin/releases/?version=17> (Windows x64 `
 
 A 17.0.x build is what these instructions assume.
 
+**Only Android Studio's JDK on the machine** (no `java` on `PATH`, bundled JBR newer than 17)?
+Nothing needs installing if the build pins its output. Confirm once on a real JDK 17, in CI.
+
+```bash
+export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+```
+
+```kotlin
+kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17); freeCompilerArgs.add("-Xjdk-release=17") } }
+tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
+```
+
 ### 1.2 Git for Windows
 
 Supplies Git Bash, which every command in this document assumes.
@@ -187,6 +199,10 @@ Then `gh auth login`. Fallback: <https://cli.github.com/>.
 The wrapper is committed to every project in this corpus. Use `./gradlew`, never a system Gradle —
 a mismatched system Gradle is a common source of "works on one machine" build failures.
 
+**New repository, no wrapper, no Gradle installed:** download the distribution zip, check it
+against the published `.sha256`, and run
+`gradle wrapper --gradle-version X.Y.Z --gradle-distribution-sha256-sum <hash>` from it.
+
 ### Set once per shell
 
 ```bash
@@ -246,6 +262,31 @@ echo "sdk.dir=C:/Users/$USER/AppData/Local/Android/Sdk" > local.properties
   ```bash
   printf 'hw.cpu.arch=x86_64\nhw.cpu.ncore=4\n' >> ~/.android/avd/<name>.avd/config.ini
   ```
+
+### An emulator with an account signed in is a prepared fixture
+
+Signing a Google account into an emulator is a long manual flow, and typing the person's
+credentials is theirs to do, not the agent's. It is done **once**.
+
+- An AVD keeps its user data, accounts included, unless it is wiped (`-wipe-data`) or started
+  `-read-only`. `-no-snapshot` only forces a cold boot. `pm clear <package>` does not remove the
+  device's account.
+- A second signed-in emulator needs no second login: shut both down, copy the signed-in `.avd`
+  folder over the other, delete `*.lock`, `hardware-qemu.ini`, `snapshots/` and
+  `emu-launch-params.txt` in the copy, and fix `AvdId` and `avd.ini.displayname` in its
+  `config.ini`. The two share one `android_id`; that was harmless for sync tests.
+- Use a dedicated test account. Signing in pulls that account's mail and contacts into the
+  emulator.
+- Record in `EMULATOR.md` which AVDs carry which account, and never wipe them.
+- The first sign-in screen ("Sign in with ease") has no text field; the way on is SKIP, on the
+  bottom row (see "An emulator a person must use" in §4).
+
+### No `avdmanager` on the machine
+
+Android Studio's SDK may have no `cmdline-tools`. An AVD can be made by hand: a folder
+`~/.android/avd/<name>.avd/` holding a copy of an existing AVD's `config.ini` with `AvdId` and
+`avd.ini.displayname` changed, and `<name>.ini` beside it with `path`, `path.rel` and `target`.
+The emulator creates the disk images on first boot. Name AVDs after the project.
 
 ### 3.1 Phone
 
@@ -342,6 +383,14 @@ a specific instance, confirm which AVD it actually is:
 "$ADB" -s emulator-5554 emu avd name
 ```
 
+**Add `-no-window` for scripted runs.** `adb`, `uiautomator dump`, `screencap` and logcat need no
+window. On a machine with a locked desktop, a windowed emulator crashed and then hung in graphics
+start-up three times; the same AVD booted at once with `-no-window` (cause inferred, fix
+observed). An emulator a person must use does need a window, placed and sized for them.
+
+**If an emulator does not appear, look before blaming load:** free memory, cores, and the tail of
+the emulator's own output. Three ran together without trouble on a machine first assumed full.
+
 ### Wait for boot — on the property, never on a guessed sleep
 
 A device (especially a watch) can sit in `adb devices` as `offline` for a long stretch before it's
@@ -367,6 +416,41 @@ WATCH="-s emulator-5558"                          # Wear34
 Every `adb` command without `-s` fails with *"more than one device/emulator"* the moment a second
 one is running. Name the two separately rather than reusing one variable — installing the phone
 build onto the watch reports `Success` and then fails in ways that look like app bugs.
+
+### An emulator a person must use
+
+Two emulators started from a shell opened at x=1374, y=-120 on a 1707x960 display: off the right
+edge and above the top. The saved position in `emulator-user.ini` was not honoured. Moved on
+screen, each was 949 pixels tall where 912 were usable, so the bottom row of the phone screen sat
+behind the taskbar. Google's sign-in page has its only buttons on that row; the person saw a page
+with "no input" and believed it was stuck.
+
+- Decide before launching: a person needs a window; switching from `-no-window` means a restart.
+- After boot, read the monitor's **working area**, then move and resize every emulator window to
+  fit inside it, side by side, keeping the aspect ratio. Say where they are.
+  `${CLAUDE_SKILL_DIR}/scripts/fit-emulator-windows.ps1` does this on Windows and prints the
+  result. Over remote desktop the usable area can be smaller than the display (inferred).
+- **When a person says a screen has no buttons or is stuck, look before advising:** a screenshot
+  and a `uiautomator dump`. The dump listed SKIP and NEXT with bounds outside the visible area.
+- While the person does a manual step, check the device directly (accounts present, focused
+  activity, screen text) instead of asking them to describe it.
+
+### Emulators that are not yours
+
+Another session, or the person, may start emulators mid-run; every `adb` call without a serial
+then fails with *"more than one device/emulator"*.
+
+- Start yours on an explicit port (`-port 5560`) and `export ANDROID_SERIAL=emulator-5560` before
+  any `adb` call or Gradle `connected*` task. Say so in the script header.
+- Kill only yours (`adb -s <serial> emu kill`). Never install on, restart or stop another.
+- Before using any attached device, establish whose it is. A headless `emulator-5554` that the
+  session had not started was most likely Android Studio's embedded emulator. Make dedicated AVDs
+  instead of borrowing it.
+- Starting an AVD a second time with `-read-only` fails with "Another emulator instance is
+  running" if the first instance runs without that flag.
+- At the end, stop only what you started, and tell the person if anything else changed. One
+  session's own shutdown was followed by the disappearance of an emulator it had not started,
+  cause unknown; that was reported rather than left unsaid.
 
 ### Install and launch
 
@@ -432,6 +516,9 @@ Watch-specific false alarms:
   a Windows path before it ever reaches the emulator, and the failure doesn't look path-related.
   Prefix the command with `MSYS_NO_PATHCONV=1`, or quote the entire remote command as one argument
   passed to `adb shell`.
+  **Set it on the one command, never `export` it.** Exported, it also stops the conversions that
+  are needed: `node "$HERE/fake-server.js"` got a `/c/...` path it could not open, the test
+  servers never started, and 9 of 11 steps failed against good code.
 
 - **`adb shell run-as cat <file>` corrupts binary files** through CRLF translation on the way back
   to a Windows shell. Use `adb exec-out` instead for anything binary (a database file, an image).
@@ -439,6 +526,14 @@ Watch-specific false alarms:
 - **A release build is not debuggable.** `adb shell run-as` and pulling app data don't work against
   a release APK at all. Verify a release build through the UI/logcat, and switch to a debug build
   when you need to inspect on-device files directly.
+
+- **Apostrophes break heredocs and `node -e` bodies in Git Bash.** Write scripts, commit messages
+  and pull-request bodies to a file: `node script.js`, `git commit -F`, `gh pr create --body-file`.
+
+- **`python` on stock Windows is the Microsoft Store stub.** `node` is more often really there;
+  check with `--version` before writing a helper.
+
+- **`/tmp` in Git Bash is not a path a native program can open.** Use `$TEMP` or the project.
 
 ---
 
@@ -472,8 +567,31 @@ On the **host** side, on Windows specifically:
   guest gets an instant EOF that looks like the server never even started. Pick a different port
   for anything you stand up locally for the emulator to talk to.
 
-Reach a host-side local server from inside the emulator via the emulator's host alias, no
-`adb reverse` needed: `http://10.0.2.2:<port>/...`.
+Reach a host-side server from inside the emulator one of two ways. **They are not interchangeable.**
+
+| Route | Address in the app | Android treats it as |
+|---|---|---|
+| Host alias | `http://10.0.2.2:<port>/` | A **local-network** address |
+| `adb reverse tcp:<port> tcp:<port>` | `http://127.0.0.1:<port>/` | Loopback |
+
+At `targetSdk` 37 on API 37, the alias needs `ACCESS_LOCAL_NETWORK` (`target-sdk-gotchas.md`).
+Without it a connection gets **no reply and no error**, only a timeout.
+
+- Standing in for a LAN server: use the alias and `adb shell pm grant <pkg>
+  android.permission.ACCESS_LOCAL_NETWORK`; `pm revoke` tests the denied path.
+- Standing in for a public server: use `adb reverse`. It stays reachable when the permission is
+  denied, as a cloud endpoint would.
+- The system `DownloadManager` cannot use the alias at all (`permissions-storage-cloud.md`).
+
+### What the emulator can prove for on-device AI
+
+| | On the stock emulator |
+|---|---|
+| Gemini Nano | **No.** Reports unavailable; needs a supported phone |
+| Downloaded model on LiteRT-LM | **Yes**, on CPU: the runtime ships `x86_64`. A 347 MB model loaded in 3 s |
+| GPU back ends, arm64 code, memory limits | **No.** Needs the phone |
+| "Wi-Fi only" download rules | Pass untested: the default network is unmetered |
+| Offline | **Yes.** `adb shell cmd connectivity airplane-mode enable`; `adb` keeps working |
 
 ---
 

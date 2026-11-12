@@ -297,6 +297,53 @@ Two things worth keeping from this that are easy to skip:
 1. **Export/import as a local fixture mechanism comes first, cloud sync is layered on top of it** — you get a testable backup format (and a way to seed realistic-looking test data) before you get the harder cloud round-trip. Don't build Drive sync directly against production data paths with no local fixture to validate against.
 2. **"In-progress" is a real, document-worthy state.** When a feature is mid-implementation, the explicit instruction was *"document that drive backup is in-progress"* before moving on to unrelated work — don't let a half-built cloud feature sit undocumented where the next session (or subagent) might assume it's finished.
 
+### Google sign-in for an Android app: there is no client secret
+
+An OAuth client of type **Android** is identified by the app's package name and the SHA-1 of its
+signing certificate. Nothing from the Cloud project belongs in the repository or in a `.env`.
+
+- What to ask the person for: enable the API; consent screen in **Testing**; add the test account
+  under test users (required); create an **Android** client with the package name and SHA-1.
+  Listing scopes in the console is optional in Testing; the scope is requested at sign-in.
+- Debug SHA-1: `keytool -list -v -keystore ~/.android/debug.keystore -storepass android -alias
+  androiddebugkey`. That client accepts only builds signed on that machine; release and CI need
+  their own.
+- The console offers a JSON download. The app never reads it. If it contains `client_secret`, the
+  client was created as Web or Desktop by mistake.
+- **Describe console steps by purpose, not by menu label.** The console had been reorganised
+  since training; a walkthrough naming a "Scopes" page sent the person looking for something that
+  was not there. When a label is missing, ask what they see.
+
+### Asking Google for access: three traps
+
+Observed with `Identity.getAuthorizationClient(ctx).authorize(request)` and the `drive.appdata`
+scope:
+
+- **The account chooser returns after `pm clear`.** A journey that clears app data then stops at a
+  Google screen it cannot answer. Name the account in the request
+  (`setAccount(Account(name, "com.google"))`) and the call is silent again. Give tests a way to
+  pass the account; never store it in the repository.
+- **Do not decide success from the consent result intent.** Reading the token from it reported
+  "not connected" after a real grant. Call `authorize()` again in the callback and check
+  `hasResolution()`.
+- **Setup that reaches storage can throw.** Every call started from a button shows its failure on
+  screen, first-run setup included. Map Play services `ApiException` codes to the app's own typed
+  errors (no network versus needs sign-in).
+
+### A restored phone is a second copy of this install
+
+Automatic backup restores the app's database onto a new phone. If it holds a per-install identity
+(a sync replica id, a sequence counter, a wrapped key), two devices then act as one. In a sync
+library this reused sequence numbers for different content; it was found by review, not by test.
+
+- Decide what backup may carry: `android:allowBackup="false"`, or rules that exclude the identity
+  and sync metadata.
+- Keep device-bound secrets in `noBackupFilesDir`. A file wrapped by a Keystore key is useless on
+  another device anyway.
+- Detect a restored or cloned install at start-up, say so, and offer a control that resets the
+  identity without losing unsent changes.
+- Audit question: "what happens when this app is restored onto a new phone?"
+
 ## Cloud LLM / API access generally
 
 From `field-assistant` (cloud inference via a third-party LLM gateway — not Google-specific, and the hardening pattern generalizes to any cloud API client):
@@ -308,6 +355,31 @@ From `field-assistant` (cloud inference via a third-party LLM gateway — not Go
 - **Sanitize chat-template control tokens out of anything user-supplied** before it reaches a prompt, especially for an on-device model whose formatter builds the template by string concatenation. Unsanitized turn markers let user text forge a system or assistant turn.
 - **A documented spend guardrail that isn't actually enforced is a finding, not a feature.** A cost cap that exists as a settings field and a comment, with nothing reading it on the request path, is worse than no cap: it's a claim of protection. Either wire it to the call site or delete it.
 - **Decide the throttle/rate-limit fallback before you hit one.** Which model does it fall back to, does the user get told, and does the fallback persist for the session or just the request? Write the answer into the testing playbook alongside how to force the condition.
+
+### A client that sends user data to a host the user typed in
+
+A review found OkHttp's defaults would re-send a prompt, with approved personal data, to wherever
+a `307` pointed, and silently retry a request not safe to send twice. For "bring your own server":
+
+- `followRedirects(false)`, `followSslRedirects(false)`, `retryOnConnectionFailure(false)`.
+- No response bodies or exception messages in errors or logs (they can echo the request), and no
+  body-logging interceptor in any build type.
+- Plain HTTP to a home server: a network security config cannot say "private addresses only", so
+  it takes `usesCleartextTraffic="true"` plus a check in code on the connected address.
+- A key field needs an autofill hint as well as a password input type, or password managers
+  cannot save it.
+
+### `DownloadManager` cannot reach the local network on Android 17
+
+A request for a file on a LAN address stayed `PENDING` at zero bytes with no error and no contact
+with the server; the same file over loopback downloaded at once. The download runs in a system
+process, so the app's own `ACCESS_LOCAL_NETWORK` grant does not help (inferred: the grant was
+made earlier in the session and not re-checked).
+
+- Files fetched with `DownloadManager` must be on a public address. In tests use `adb reverse`.
+- Add your own timeout, so "zero bytes for N minutes" becomes a visible failure.
+- Verify size and SHA-256 on completion, and keep the file's extension: some model runtimes
+  identify the format by it.
 
 ## On-device and hybrid inference
 
@@ -324,7 +396,53 @@ So, as a standing audit item for any app using hybrid inference:
 - **Make the routing decision visible** wherever it carries a privacy meaning — the user should be able to tell which path answered.
 - This is a specific instance of the general rule in intake Q6: decide what happens offline, rate-limited, or with the model missing, *before* it happens.
 
+**Do not hand-roll this routing in a ViewModel.** For on-device first, the user's own server or
+cloud key otherwise, with fallback and approval before personal data leaves, use `llm-tiers` and
+its usage skill (`ecosystem.md` §5).
+
+**A bundled model runtime is large; the system one is free.** LiteRT-LM is one native library per
+ABI: about 23 MB for `arm64-v8a`, 27 MB for `x86_64`. Ship an App Bundle, or keep the emulator
+copy out of release builds (`ndk { abiFilters += "arm64-v8a" }`). Gemini Nano adds nothing.
+
 Also worth knowing, same platform generation: **AppFunctions** lets an app expose tools and data to system agents (Google ships a `device-ai/appfunctions` skill), the **Structured Output API** replaces brittle parsing of model output — adopt it rather than regex-scraping a response — and **ADK for Android** covers multi-agent workflows.
+
+## A secret the person must reproduce later: use the system password form
+
+A passphrase, recovery code or key the person will need again on another device should be
+generated, saved and filled by their password manager. Default to the platform's own mechanism
+(autofill on an ordinary form). Reach for explicit Credential Manager buttons only after the
+native path has been tried and shown not to fit. All of the following was observed on an Android
+17 emulator with Google Password Manager, by reading the autofill log
+(`adb shell cmd autofill set log_level verbose`).
+
+| What makes it work | Without it |
+|---|---|
+| The field is marked `ContentType.NewPassword` when creating, `ContentType.Password` when entering an existing secret | The app must know which; the manager treats them differently |
+| A **username field beside it**: read-only, fixed text, `ContentType.Username` | A lone password field got a null response: no fill, no save |
+| That username is **not shown**: 1 dp, alpha 0, not focusable, hidden from accessibility | It is plumbing. Save and fill both worked with it hidden |
+| A field of the form has had **focus** before submit | A value filled by a button and submitted untouched started no autofill session: no save offer. Request focus when filling programmatically |
+| `AutofillManager.commit()` once the secret is **accepted**, while the form is still on screen | Never commit a refused value, or a typo is offered for saving |
+| `AutofillManager.cancel()` before the form leaves, for input that must **not** be saved | The save offer also fires when the fields disappear. A join code (a raw key) typed into the passphrase field was offered for saving |
+
+- **Generation was not offered natively.** Offer one app-side "Suggest one" control, only when
+  creating and only while the field is empty. Show the generated value in the clear; saving it is
+  then the system's ordinary offer. No app-side save or fetch button.
+- **State the trade-off in the app.** Saved in Google Password Manager, the secret lives in the
+  account that may hold the data it protects. The system prompt lets the person decline.
+- **A stale entry gets filled with confidence.** An interrupted first save left one; the app's
+  "that passphrase does not match" message is the only defence. That path must exist and be
+  tested.
+- **The first save on an account needs the owner at the screen**: the save sheet, a consent screen,
+  another device's screen-lock PIN, and on a second device the account password. An agent stops
+  at each and hands over; a person working remotely cannot do the last two. An approval to tap
+  the save sheet is not an approval for the consent screen.
+- **Not shown:** a saved entry arriving on a second device (empty fill response for minutes on a
+  second emulator). Say "save and fill shown on one device" until it is.
+- `pm clear <package>` also deletes `/sdcard/Android/data/<package>`. A "second device sees
+  existing data" check silently became a first-device check.
+
+Audit line: "Every secret-entry field: can a password manager generate, save and fill it? If not,
+is that a written decision?"
 
 ## The "personal APK, live credentials" exception
 

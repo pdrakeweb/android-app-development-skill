@@ -22,6 +22,25 @@ three rounds in one place means the defect is in the design, and another fix pas
 Phases 0–2 (including 1b) happen once, and re-opening them later is a deliberate act that gets
 written down, not a drift.
 
+### When the thing being built is a library
+
+The interview, design phase and `verify-install.sh` assume an app. A library whose repository
+already holds its design keeps the order and changes the gates:
+
+| Phase | For a library |
+|---|---|
+| 0, 1 | The repository's design documents are the spec. **Ask for the Maven namespace before the first source file** (it becomes every package name), and before changing the public API's shape |
+| 2 | The roadmap, one milestone at a time, each with a "proven by" |
+| 3 | Prove an empty multi-module build first (`platform-currency.md` §10). Guard the pure-Kotlin core against Android and network imports, and show the guard failing |
+| 4 | Fakes the library ships; opt-in tests against real services; a sample app for `verify-install.sh` and scripted journeys (`testing-and-bugs.md` §3) |
+| 5 | A read-only review anchored on the invariants (`subagent-delegation.md`, Pattern B2) |
+| 6 | Publish to local Maven and build a separate example project against the published artifacts. Check what each adds to an app's size |
+| 7 | A usage skill, tested by giving it to an agent with no other context and a different app to build; fix every reported guess and repeat |
+
+**Stacked milestone pull requests need a policy for late fixes:** either they go on the base
+branch and merge up, or each pull request says the tip carries fixes for earlier milestones. To
+merge the stack, retarget each to main first, in order.
+
 ---
 
 ## Phase 0 · Interview
@@ -225,6 +244,9 @@ assuming a scenario fits:
 | ARM verification, artifact shape | `${CLAUDE_SKILL_DIR}/scripts/verify-artifact.sh`, not a UI flow |
 | Toolchain and build-config guards | Not a device behaviour |
 | Soak (fd/thread/memory before-after) | Needs process-level measurement |
+
+A third format, launch extras in and one log line out, suits a library's sample app and
+network-heavy features: `testing-and-bugs.md` §3.
 
 Both formats feed the same gate. Whichever you use, the harness conventions below still apply —
 they are about *rigs and evidence*, not about file format.
