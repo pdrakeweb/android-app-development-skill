@@ -147,6 +147,7 @@ a `scripts/` directory of its own.
 | `skills/android-app-development/scripts/preflight.sh [dir]` | Does this machine's toolchain match the pins, and what does the project actually declare? |
 | `skills/android-app-development/scripts/verify-install.sh <apk> <pkg>` | Did it install, launch, reach the foreground, and survive without crashing? |
 | `skills/android-app-development/scripts/verify-artifact.sh <apk> [--release]` | Right ABIs, `targetSdk`, v2+ signature, and not accidentally debuggable? |
+| `skills/android-app-development/scripts/fit-emulator-windows.ps1` | Windows: are the emulator windows a person must use on screen and inside the usable area? |
 
 ## A note on the examples
 

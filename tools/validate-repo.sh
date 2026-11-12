@@ -45,7 +45,7 @@ fi
 # lines and never name the encoding. Keep .ps1 pure ASCII; it is immune to how
 # the file is read, where a BOM is invisible state an editor can drop.
 head_ "PowerShell scripts"
-for f in ./*.ps1; do
+for f in ./*.ps1 "$SKILL_DIR"/scripts/*.ps1; do
   [ -e "$f" ] || continue
   if LC_ALL=C grep -nP '[^\x00-\x7F]' "$f" >/dev/null 2>&1; then
     bad "non-ASCII in $f (breaks under Windows PowerShell 5.1):"
