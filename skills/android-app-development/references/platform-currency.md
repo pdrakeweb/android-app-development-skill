@@ -60,6 +60,12 @@ and pins a minimum. *"Android Gradle plugin 9.0 now has a runtime dependency on 
 (<https://developer.android.com/build/releases/agp-9-0-0-release-notes>). Re-read that page rather
 than the migration guide when you need the number; the migration guide does not carry it.
 
+**Observed newer, 2026-11-11.** A multi-module library and a Compose/Hilt app both built cleanly
+with **AGP 9.5.1, Gradle 9.9.1, Kotlin 2.4.21, KSP 2.3.13, Hilt 2.60.1, Compose BOM 2026.09.00,
+compileSdk 37**, on JDK 17 in CI and on JDK 25 with output pinned to 17. That is one working set,
+proven by building it (§10 step 7), not a re-verification of every row above: the table keeps its
+September date until someone re-reads the release notes behind each row.
+
 ---
 
 ## 2 · How to re-verify when this file is stale
@@ -73,6 +79,14 @@ re-verify before scaffolding** rather than trusting it. Three sources, in order:
 2. <https://developer.android.com/about/versions> — is the newest API level stable or beta?
 3. Google's own `agp-9-upgrade` skill, which is maintained against the toolchain rather than
    written down once (`ecosystem.md`).
+
+**For "what is the newest released version of X", read the repository, not a web page.**
+Documentation pages lag the artifacts (a "get started" page showed `beta4` while the repository
+had `beta5`). Two sources that cannot be stale:
+
+- `maven-metadata.xml` for the artifact, from Google Maven or Maven Central. The `<release>`
+  element can name a pre-release, so take the newest `<version>` that is digits and dots only.
+- <https://services.gradle.org/versions/current> for Gradle.
 
 **When this file and a Google skill disagree, the Google skill wins.** This one is a snapshot; that
 one is maintained. Correct this file when you notice.
@@ -100,6 +114,17 @@ not name the real cause. The changes that bite:
   `android.r8.integratedResourceShrinking` and `android.enableNewResourceShrinker.preciseShrinking`
   (<https://developer.android.com/build/releases/agp-9-0-0-release-notes>).
 - **KMP modules move to `com.android.kotlin.multiplatform.library`**, off `com.android.library`.
+
+Smaller things that are true under AGP 9's built-in Kotlin and are not obvious:
+
+- `kotlin { explicitApi(); compilerOptions { … } }` works in an Android library module with no
+  Kotlin plugin applied.
+- JUnit 5 in JVM unit tests of an Android module needs
+  `testOptions { unitTests.all { it.useJUnitPlatform() } }`. Without it the tests are not found
+  and the task passes.
+- `compileSdk = 37` resolves a platform that the SDK manager installed as `android-37.0`.
+- With warnings as errors, any use of an `@ExperimentalCoroutinesApi` API in main code fails the
+  build. A library should avoid those APIs anyway; in tests, opt in explicitly.
 
 **Do not hand-write an AGP 9 migration from this list.** It is here so you recognise the symptoms.
 For the actual work, install Google's `agp-9-upgrade` skill (`ecosystem.md`) — it is maintained
