@@ -263,6 +263,31 @@ echo "sdk.dir=C:/Users/$USER/AppData/Local/Android/Sdk" > local.properties
   printf 'hw.cpu.arch=x86_64\nhw.cpu.ncore=4\n' >> ~/.android/avd/<name>.avd/config.ini
   ```
 
+### An emulator with an account signed in is a prepared fixture
+
+Signing a Google account into an emulator is a long manual flow, and typing the person's
+credentials is theirs to do, not the agent's. It is done **once**.
+
+- An AVD keeps its user data, accounts included, unless it is wiped (`-wipe-data`) or started
+  `-read-only`. `-no-snapshot` only forces a cold boot. `pm clear <package>` does not remove the
+  device's account.
+- A second signed-in emulator needs no second login: shut both down, copy the signed-in `.avd`
+  folder over the other, delete `*.lock`, `hardware-qemu.ini`, `snapshots/` and
+  `emu-launch-params.txt` in the copy, and fix `AvdId` and `avd.ini.displayname` in its
+  `config.ini`. The two share one `android_id`; that was harmless for sync tests.
+- Use a dedicated test account. Signing in pulls that account's mail and contacts into the
+  emulator.
+- Record in `EMULATOR.md` which AVDs carry which account, and never wipe them.
+- The first sign-in screen ("Sign in with ease") has no text field; the way on is SKIP, on the
+  bottom row (see "An emulator a person must use" in §4).
+
+### No `avdmanager` on the machine
+
+Android Studio's SDK may have no `cmdline-tools`. An AVD can be made by hand: a folder
+`~/.android/avd/<name>.avd/` holding a copy of an existing AVD's `config.ini` with `AvdId` and
+`avd.ini.displayname` changed, and `<name>.ini` beside it with `path`, `path.rel` and `target`.
+The emulator creates the disk images on first boot. Name AVDs after the project.
+
 ### 3.1 Phone
 
 ```bash
@@ -392,6 +417,24 @@ Every `adb` command without `-s` fails with *"more than one device/emulator"* th
 one is running. Name the two separately rather than reusing one variable — installing the phone
 build onto the watch reports `Success` and then fails in ways that look like app bugs.
 
+### An emulator a person must use
+
+Two emulators started from a shell opened at x=1374, y=-120 on a 1707x960 display: off the right
+edge and above the top. The saved position in `emulator-user.ini` was not honoured. Moved on
+screen, each was 949 pixels tall where 912 were usable, so the bottom row of the phone screen sat
+behind the taskbar. Google's sign-in page has its only buttons on that row; the person saw a page
+with "no input" and believed it was stuck.
+
+- Decide before launching: a person needs a window; switching from `-no-window` means a restart.
+- After boot, read the monitor's **working area**, then move and resize every emulator window to
+  fit inside it, side by side, keeping the aspect ratio. Say where they are.
+  `${CLAUDE_SKILL_DIR}/scripts/fit-emulator-windows.ps1` does this on Windows and prints the
+  result. Over remote desktop the usable area can be smaller than the display (inferred).
+- **When a person says a screen has no buttons or is stuck, look before advising:** a screenshot
+  and a `uiautomator dump`. The dump listed SKIP and NEXT with bounds outside the visible area.
+- While the person does a manual step, check the device directly (accounts present, focused
+  activity, screen text) instead of asking them to describe it.
+
 ### Emulators that are not yours
 
 Another session, or the person, may start emulators mid-run; every `adb` call without a serial
@@ -400,6 +443,14 @@ then fails with *"more than one device/emulator"*.
 - Start yours on an explicit port (`-port 5560`) and `export ANDROID_SERIAL=emulator-5560` before
   any `adb` call or Gradle `connected*` task. Say so in the script header.
 - Kill only yours (`adb -s <serial> emu kill`). Never install on, restart or stop another.
+- Before using any attached device, establish whose it is. A headless `emulator-5554` that the
+  session had not started was most likely Android Studio's embedded emulator. Make dedicated AVDs
+  instead of borrowing it.
+- Starting an AVD a second time with `-read-only` fails with "Another emulator instance is
+  running" if the first instance runs without that flag.
+- At the end, stop only what you started, and tell the person if anything else changed. One
+  session's own shutdown was followed by the disappearance of an emulator it had not started,
+  cause unknown; that was reported rather than left unsaid.
 
 ### Install and launch
 

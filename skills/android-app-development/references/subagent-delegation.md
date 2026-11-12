@@ -115,6 +115,11 @@ REPORT
 Give it the code, not your conclusions: a reviewer handed a hypothesis returns it confirmed.
 Reproduce each finding with a failing test before fixing it.
 
+**Ask for what the test harness cannot generate.** After a simulation was green, a reviewer given
+only the code and the invariants found twelve problems the simulation could not have produced
+(two engines on one store, a restore from backup, a truncated upload, one bad object blocking
+everything). Add to the brief: "list the scenarios the tests cannot generate".
+
 ## Pattern C — Parallel sessions on feature branches, and the integration pass
 
 Distinct from both of the above: multiple *sessions* (not subagents) working the same repo on
