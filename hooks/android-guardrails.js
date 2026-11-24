@@ -47,6 +47,7 @@ function inspect(payload) {
   const notes = [];
 
   if (tool === 'Bash') notes.push(...inspectBash(String(input.command || '')));
+  if (tool === 'Bash' || tool === 'PowerShell') notes.push(...inspectEmulatorLaunch(String(input.command || '')));
 
   // Raw tool output is the biggest avoidable context cost. Gradle is cut down by
   // gradle-quiet.js in this same plugin; this covers the other noisy commands.
@@ -78,6 +79,18 @@ function inspect(payload) {
   }
 
   return notes;
+}
+
+// A visible emulator launched directly on Windows opens off the right edge of the desktop.
+function inspectEmulatorLaunch(cmd, platform = process.platform) {
+  if (platform !== 'win32') return [];
+  const launches = /(?:\bemulator(?:\.exe)?\b|\$\{?EMU\w*\}?)["']?[^\r\n;|]*\s["']?-avd\b/i.test(cmd);
+  if (!launches || /-no-window|start-emulator.ps1/.test(cmd)) return [];
+  return [
+    'Emulator launched directly: on Windows its window opens off the right edge of the desktop. ' +
+    'Run `fit-emulator-windows.ps1 -Port <port>` now, and launch with `start-emulator.ps1 -Avd <name> ' +
+    '-Port <port>` next time (both in ${CLAUDE_SKILL_DIR}/scripts).',
+  ];
 }
 
 function inspectBash(cmd) {
