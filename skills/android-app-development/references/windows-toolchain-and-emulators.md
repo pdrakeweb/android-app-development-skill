@@ -374,6 +374,18 @@ nohup "$EMU" -avd Pixel10Test -no-boot-anim -no-audio -port 5554 >/dev/null 2>&1
 nohup "$EMU" -avd Wear34 -no-boot-anim -no-audio -port 5558 >/dev/null 2>&1 &
 ```
 
+**On Windows, do not launch a visible emulator that way.** Its window opens off the right edge of
+the desktop, every time. Use the launcher, which places the window, waits for boot, and exits
+non-zero if the window is not fully on screen:
+
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/scripts/start-emulator.ps1" -Avd Pixel10Test -Port 5554 -Extra "-no-audio"
+```
+
+Copy `start-emulator.ps1` and `fit-emulator-windows.ps1` into each project's `tools/` and make its
+`EMULATOR.md` start command the launcher, so a session without this skill gets it too.
+
+
 Ports are assigned in even pairs from 5554 upward in **boot order, not per-AVD** — the first
 emulator to finish booting is always `emulator-5554`, whichever AVD it was. Pin one explicitly
 with `-port` once you're running more than one at a time, and before doing anything destructive to
@@ -417,7 +429,26 @@ Every `adb` command without `-s` fails with *"more than one device/emulator"* th
 one is running. Name the two separately rather than reusing one variable — installing the phone
 build onto the watch reports `Success` and then fails in ways that look like app bugs.
 
-### An emulator a person must use
+### Emulator windows: always on screen
+
+**Rule (Windows): every emulator started with a window goes through `start-emulator.ps1`**, whether
+or not a person is expected to use it. People look at the screen while work runs, and cannot reach
+a window that is off it. Headless runs (`-no-window`) are exempt.
+
+| Need | Do |
+|---|---|
+| Start one | `start-emulator.ps1 -Avd <name> -Port <port>` |
+| Check all | `fit-emulator-windows.ps1 -Check` (exit 1 if any is off screen) |
+| Move yours | `fit-emulator-windows.ps1 -Port <port>` |
+| Tidy all, side by side | `fit-emulator-windows.ps1` (also moves other sessions' windows) |
+
+What does **not** work: `window.x` / `window.y` in `emulator-user.ini` (ignored), and any
+`emulator.exe` option (there is none for position).
+
+**Why it came back once:** this was first written as a step to run after boot, only when a person
+had to use the emulator. The next project's own start command skipped it, and the same windows
+opened at the same x=1374 twelve days later. A placement step separate from the launch gets
+forgotten; keep it inside the launch. `android-guardrails.js` flags a bare visible launch.
 
 Two emulators started from a shell opened at x=1374, y=-120 on a 1707x960 display: off the right
 edge and above the top. The saved position in `emulator-user.ini` was not honoured. Moved on
@@ -426,10 +457,8 @@ behind the taskbar. Google's sign-in page has its only buttons on that row; the 
 with "no input" and believed it was stuck.
 
 - Decide before launching: a person needs a window; switching from `-no-window` means a restart.
-- After boot, read the monitor's **working area**, then move and resize every emulator window to
-  fit inside it, side by side, keeping the aspect ratio. Say where they are.
-  `${CLAUDE_SKILL_DIR}/scripts/fit-emulator-windows.ps1` does this on Windows and prints the
-  result. Over remote desktop the usable area can be smaller than the display (inferred).
+- Say where the windows are. The scripts use the monitor's **working area** (screen minus taskbar)
+  and keep the aspect ratio. Over remote desktop the usable area can be smaller than the display (inferred).
 - **When a person says a screen has no buttons or is stuck, look before advising:** a screenshot
   and a `uiautomator dump`. The dump listed SKIP and NEXT with bounds outside the visible area.
 - While the person does a manual step, check the device directly (accounts present, focused
